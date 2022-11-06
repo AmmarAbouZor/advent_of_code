@@ -1,5 +1,5 @@
 use std::{
-    fs,
+    cmp, fs,
     io::{self, BufRead},
 };
 
@@ -85,10 +85,16 @@ impl Present {
         2 * self.length * self.width + 2 * self.width * self.height + 2 * self.height * self.length
     }
 
-    fn calc_smallest_area(&self) -> u32 {
-        let dimensions = vec![self.length, self.width, self.height];
+    fn get_smallest_dimensions(&self) -> [u32; 2] {
+        if self.length <= self.width {
+            [self.length, cmp::min(self.width, self.height)]
+        } else {
+            [self.width, cmp::min(self.length, self.height)]
+        }
+    }
 
-        dimensions.iter().product::<u32>() / dimensions.iter().max().unwrap()
+    fn calc_smallest_area(&self) -> u32 {
+        self.get_smallest_dimensions().iter().product()
     }
 
     fn calc_all_paper(&self) -> u32 {
@@ -98,9 +104,7 @@ impl Present {
     fn calc_ribbon(&self) -> u32 {
         let bowl = self.length * self.width * self.height;
 
-        let dimensions = vec![self.length, self.width, self.height];
-
-        let shortest_distance = dimensions.iter().sum::<u32>() - dimensions.iter().max().unwrap();
+        let shortest_distance: u32 = self.get_smallest_dimensions().iter().sum();
 
         bowl + shortest_distance * 2
     }
