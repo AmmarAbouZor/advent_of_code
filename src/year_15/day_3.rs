@@ -1,3 +1,4 @@
+#![allow(warnings, unused)]
 use std::collections::HashSet;
 
 #[cfg(test)]
@@ -96,7 +97,6 @@ const INPUT: &str = "v>v<vvv<<vv^v<v>vv>v<<<^^^^^<<^<vv>^>v^>^>^>^>^><vvvv<^>^<<
 pub fn run() {
     let visited_houses = calc_visited_houses(INPUT);
     println!("number of visited houses this year is {visited_houses}");
-    
     let visited_houses_two_worker = calc_visited_houses_two_workers(INPUT); 
     println!("number of visited houses next year is {visited_houses_two_worker}");
 }

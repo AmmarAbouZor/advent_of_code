@@ -1,3 +1,4 @@
+#![allow(warnings, unused)]
 #[cfg(test)]
 mod tests {
 

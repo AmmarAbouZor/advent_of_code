@@ -1,3 +1,5 @@
+#![allow(warnings, unused)]
+
 use std::{
     cmp, fs,
     io::{self, BufRead},
