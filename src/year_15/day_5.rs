@@ -4,6 +4,8 @@ use std::{
     io::{self, BufRead},
 };
 
+use crate::utls::read_lines_from_file;
+
 const FORBIDDEN_STRINGS: &'static [&str] = &["ab", "cd", "pq", "xy"];
 const VOWELS: &'static [char] = &['a', 'e', 'i', 'o', 'u'];
 
@@ -90,11 +92,8 @@ fn is_word_good_v2(word: &str) -> bool {
 }
 
 pub fn run() {
-    let file = fs::File::open(r"src/year_15/day_5.txt").unwrap();
-
-    let nice_words = io::BufReader::new(file)
-        .lines()
-        .filter_map(|line| line.ok())
+    let nice_words = read_lines_from_file(r"src/year_15/day_5.txt")
+        .into_iter()
         .filter(|word| is_string_nice(word))
         .count();
 
@@ -102,9 +101,8 @@ pub fn run() {
 
     let file = fs::File::open(r"src/year_15/day_5.txt").unwrap();
 
-    let nice_words_2 = io::BufReader::new(file)
-        .lines()
-        .filter_map(|line| line.ok())
+    let nice_words_2 = read_lines_from_file(r"src/year_15/day_5.txt")
+        .into_iter()
         .filter(|word| is_word_good_v2(word))
         .count();
 

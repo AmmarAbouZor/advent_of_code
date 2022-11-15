@@ -5,6 +5,8 @@ use std::{
     io::{self, BufRead},
 };
 
+use crate::utls::read_lines_from_file;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -113,11 +115,8 @@ impl Present {
 }
 
 pub fn run() {
-    let file = fs::File::open(r"src/year_15/day_2.txt").unwrap();
-
-    let presents: Vec<Present> = io::BufReader::new(file)
-        .lines()
-        .filter_map(|line| line.ok())
+    let presents: Vec<Present> = read_lines_from_file(r"src/year_15/day_2.txt")
+        .into_iter()
         .map(|line| Present::from(line.as_str()))
         .collect();
 

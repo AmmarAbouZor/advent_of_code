@@ -5,6 +5,8 @@ use std::{
     io::{self, BufRead},
 };
 
+use crate::utls::read_lines_from_file;
+
 #[derive(Debug)]
 struct LightsGrid<T> {
     cells: Vec<Vec<T>>,
@@ -114,11 +116,8 @@ fn apply_inst_nums(grid: &mut LightsGrid<i32>, inst: &Instruction) {
 fn run_bools() {
     let mut grid = LightsGrid::new(false);
 
-    let file = fs::File::open(r"src/year_15/day_6.txt").unwrap();
-
-    io::BufReader::new(file)
-        .lines()
-        .filter_map(|line| line.ok())
+    read_lines_from_file(r"src/year_15/day_6.txt")
+        .into_iter()
         .for_each(|line| {
             let inst: Instruction = line.as_str().into();
             apply_inst_bools(&mut grid, &inst);
@@ -132,11 +131,8 @@ fn run_bools() {
 fn run_nums() {
     let mut grid = LightsGrid::new(0i32);
 
-    let file = fs::File::open(r"src/year_15/day_6.txt").unwrap();
-
-    io::BufReader::new(file)
-        .lines()
-        .filter_map(|line| line.ok())
+    read_lines_from_file(r"src/year_15/day_6.txt")
+        .into_iter()
         .for_each(|line| {
             let inst: Instruction = line.as_str().into();
             apply_inst_nums(&mut grid, &inst);
