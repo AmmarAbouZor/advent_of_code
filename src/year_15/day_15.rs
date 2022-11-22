@@ -113,6 +113,48 @@ fn get_high_score(ings: Vec<Ingredient>) -> i64 {
     max_score
 }
 
+fn get_high_score_independent<F>(ings: Vec<Ingredient>, approved: F) -> i64
+where
+    F: Fn(&Vec<CookiePart>) -> bool + Copy,
+{
+    let mut max_score = 0;
+    let mut spoons = vec![];
+    find_max_score_recursion(&ings, spoons, &mut max_score, approved);
+    max_score
+}
+
+fn find_max_score_recursion<F>(
+    ings: &Vec<Ingredient>,
+    mut spoons: Vec<usize>,
+    max_score: &mut i64,
+    approved: F,
+) where
+    F: Fn(&Vec<CookiePart>) -> bool + Copy,
+{
+    spoons.push(0);
+    let last_index = spoons.len() - 1;
+    for spoon_count in 0..100 - spoons.iter().sum::<usize>() {
+        spoons[last_index] = spoon_count;
+        if spoons.len() == ings.len() - 1 {
+            let mut parts: Vec<CookiePart> = spoons
+                .iter()
+                .enumerate()
+                .map(|(i, spoon)| CookiePart::new(&ings[i], *spoon as i64))
+                .collect();
+
+            parts.push(CookiePart::new(
+                ings.last().unwrap(),
+                100 - spoons.iter().sum::<usize>() as i64,
+            ));
+            if approved(&parts) {
+                *max_score = max(*max_score, calc_score(parts));
+            }
+        } else {
+            find_max_score_recursion(ings, spoons.clone(), max_score, approved);
+        }
+    }
+}
+
 fn get_high_score_with_calories(ings: Vec<Ingredient>) -> i64 {
     let mut max_score = 0;
 
@@ -141,14 +183,29 @@ fn part_1() {
     println!("high score is {high_score}");
 }
 
+fn part_1_independent() {
+    let ingredients = get_ingredients();
+    let high_score = get_high_score_independent(ingredients, |_| true);
+    println!("high score independent is {high_score}");
+}
+
 fn part_2() {
     let ingredients = get_ingredients();
     let high_score = get_high_score_with_calories(ingredients);
     println!("high score with calories is {high_score}");
 }
+
+fn part_2_independent() {
+    let ingredients = get_ingredients();
+    let high_score = get_high_score_independent(ingredients, |parts| calc_calories(parts) == 500);
+    println!("high score independent is {high_score}");
+}
+
 pub fn run() {
     part_1();
+    part_1_independent();
     part_2();
+    part_2_independent();
 }
 
 #[cfg(test)]
@@ -172,5 +229,20 @@ mod tests {
         let ing = get_test_ingr();
         let parts = vec![CookiePart::new(&ing[0], 44), CookiePart::new(&ing[1], 56)];
         assert_eq!(calc_score(parts), 62842880);
+    }
+
+    #[test]
+    fn test_part_1() {
+        let ing = get_test_ingr();
+        assert_eq!(get_high_score_independent(ing, |_| true), 62842880);
+    }
+
+    #[test]
+    fn test_part_2() {
+        let ing = get_test_ingr();
+        assert_eq!(
+            get_high_score_independent(ing, |parts| calc_calories(parts) == 500),
+            57600000
+        );
     }
 }
