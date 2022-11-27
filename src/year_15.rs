@@ -10,6 +10,7 @@ mod day_17;
 mod day_18;
 mod day_19;
 mod day_2;
+mod day_20;
 mod day_3;
 mod day_4;
 mod day_5;
@@ -37,5 +38,6 @@ pub fn run() {
     // day_16::run();
     // day_17::run();
     // day_18::run();
-    day_19::run();
+    // day_19::run();
+    day_20::run();
 }
