@@ -1,4 +1,4 @@
-use std::{error::Error, str::FromStr};
+use std::str::FromStr;
 
 use crate::utls::read_text_from_file;
 

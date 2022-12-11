@@ -38,7 +38,7 @@ impl Room {
             let count_b = chars_clone.iter().filter(|&c| c == b).count();
             let mut result = count_b.partial_cmp(&count_a).unwrap();
             if result == Ordering::Equal {
-                result = a.partial_cmp(&b).unwrap();
+                result = a.partial_cmp(b).unwrap();
             }
 
             result
