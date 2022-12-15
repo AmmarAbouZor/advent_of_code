@@ -121,11 +121,4 @@ mod tests {
     fn get_test_packages() -> Vec<usize> {
         vec![1, 2, 3, 4, 5, 7, 8, 9, 10, 11]
     }
-
-    #[test]
-    fn test_get_qe_ideal() {
-        let packages = get_test_packages();
-        assert_eq!(get_qe_ideal_conf(packages.clone(), 3), 99);
-        assert_eq!(get_qe_ideal_conf(packages, 4), 44);
-    }
 }
