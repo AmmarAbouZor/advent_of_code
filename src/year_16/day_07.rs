@@ -35,7 +35,7 @@ impl FromStr for IP {
 struct Aba(char, char);
 impl IP {
     fn support_tls(&self) -> bool {
-        self.valid_secs.iter().any(|sec| IP::has_abba(sec))
+        self.valid_secs.iter().any(IP::has_abba)
             && self.hypernet_secs.iter().all(|sec| !IP::has_abba(sec))
     }
 

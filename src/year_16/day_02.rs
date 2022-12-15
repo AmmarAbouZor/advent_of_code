@@ -71,7 +71,7 @@ fn get_code(lines: Vec<String>) -> String {
     let mut buttons = vec![];
 
     lines.iter().map(|line| line.chars()).for_each(|chars| {
-        let mut button = buttons.last().unwrap_or(&Button::new(1, 1)).clone();
+        let mut button = *buttons.last().unwrap_or(&Button::new(1, 1));
         for ch in chars {
             button.apply(ch.into());
         }

@@ -70,8 +70,7 @@ fn reverse_replacement(repl: &Replacement, molecule: &mut String) -> bool {
 }
 
 fn find_any_count_rand(input: String, mut replacements: Vec<Replacement>) -> usize {
-    let mut found = false;
-    while !found {
+    loop {
         let mut cloned_input = input.clone();
         let mut count = 0;
         let mut done = false;
@@ -92,7 +91,7 @@ fn find_any_count_rand(input: String, mut replacements: Vec<Replacement>) -> usi
         }
     }
 
-    panic!("Nothing found");
+    unreachable!("Nothing found");
 }
 
 fn part_2() {

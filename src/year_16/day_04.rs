@@ -90,7 +90,7 @@ fn part_2() {
         .iter()
         .map(|line| line.parse::<Room>().unwrap())
         .filter(|room| room.is_valid())
-        .find(|room| room.decrypt() == String::from("northpole object storage"))
+        .find(|room| room.decrypt() == *"northpole object storage")
         .unwrap()
         .id;
 

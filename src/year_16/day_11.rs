@@ -79,7 +79,7 @@ impl Game {
         assert!(new_floor > 0);
         assert!(new_floor <= 4);
 
-        let items: Vec<_> = mov.items.into_iter().filter_map(|item| item).collect();
+        let items: Vec<_> = mov.items.into_iter().flatten().collect();
         assert!(!items.is_empty());
         assert!(items.len() <= 2);
 
@@ -211,12 +211,10 @@ impl Game {
                     c if c < 8 => [cloned_items.pop(), cloned_items.pop()],
                     _ => [cloned_items.pop(), None],
                 }
+            } else if counter < 8 {
+                [cloned_items.pop(), None]
             } else {
-                if counter < 8 {
-                    [cloned_items.pop(), None]
-                } else {
-                    [cloned_items.pop(), cloned_items.pop()]
-                }
+                [cloned_items.pop(), cloned_items.pop()]
             };
 
             let mv = Move {
@@ -243,9 +241,7 @@ impl Game {
             .cloned()
             .collect();
 
-        let items: Vec<_> = mv.items.into_iter().filter_map(|item| item).collect();
-
-        items.into_iter().for_each(|(name, typ)| {
+        mv.items.into_iter().flatten().for_each(|(name, typ)| {
             let item = pot_items
                 .iter_mut()
                 .find(|item| item.name == name && item.item_type == typ)

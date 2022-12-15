@@ -106,16 +106,16 @@ impl Factory {
     }
 
     fn apply_assign(&mut self, cmd: &AssignCommand) {
-        let bot = self.bots.entry(cmd.bot).or_insert(Bot::new());
+        let bot = self.bots.entry(cmd.bot).or_insert_with(Bot::new);
         bot.add_chip(cmd.value);
     }
 
     fn apply_give(&mut self, cmd: &GiveCommand) -> Option<(usize, usize)> {
-        let bot = self.bots.entry(cmd.bot).or_insert(Bot::new());
+        let bot = self.bots.entry(cmd.bot).or_insert_with(Bot::new);
         if let Some((low, high)) = bot.give_chips() {
             match cmd.low {
                 Destination::Bot(bot) => {
-                    let bot = self.bots.entry(bot).or_insert(Bot::new());
+                    let bot = self.bots.entry(bot).or_insert_with(Bot::new);
                     bot.add_chip(low);
                 }
                 Destination::OutPut(output) => {
@@ -125,7 +125,7 @@ impl Factory {
 
             match cmd.high {
                 Destination::Bot(bot) => {
-                    let bot = self.bots.entry(bot).or_insert(Bot::new());
+                    let bot = self.bots.entry(bot).or_insert_with(Bot::new);
                     bot.add_chip(high);
                 }
                 Destination::OutPut(output) => {
@@ -172,7 +172,7 @@ fn part_1() {
     }
 
     let mut found = false;
-    while !found && give.len() > 0 {
+    while !found && give.is_empty() {
         let mut executed_cmds = vec![];
         for gv_cmd in give.iter() {
             if let Some((low, high)) = factory.apply_give(gv_cmd) {
@@ -198,7 +198,7 @@ fn part_2() {
         factory.apply_assign(&cmd);
     }
 
-    while give.len() > 0 {
+    while give.is_empty() {
         let mut executed_cmds = vec![];
         for gv_cmd in give.iter() {
             if let Some((_, _)) = factory.apply_give(gv_cmd) {
