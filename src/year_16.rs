@@ -15,9 +15,10 @@ mod day_14;
 mod day_15;
 mod day_16;
 mod day_17;
+mod day_18;
 
 pub fn run() {
-    run_day(17);
+    run_day(18);
 }
 
 fn run_day(day: u8) {
@@ -39,6 +40,7 @@ fn run_day(day: u8) {
         15 => day_15::run(),
         16 => day_16::run(),
         17 => day_17::run(),
+        18 => day_18::run(),
         _ => panic!("day not implemented"),
     }
 }
