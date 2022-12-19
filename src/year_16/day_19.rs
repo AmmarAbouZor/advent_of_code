@@ -44,16 +44,9 @@ fn is_odd(num: usize) -> bool {
 }
 
 fn part_2() {
-    let mut left = VecDeque::new();
-    let mut right = VecDeque::new();
     let input = 3014603;
-    for i in 1..input + 1 {
-        if i < input / 2 + 1 {
-            left.push_back(i);
-        } else {
-            right.push_front(i);
-        }
-    }
+    let mut left: VecDeque<i32> = (1..input / 2 + 1).collect();
+    let mut right: VecDeque<i32> = (input / 2 + 1..input + 1).rev().collect();
 
     while !left.is_empty() && !right.is_empty() {
         if left.len() > right.len() {
