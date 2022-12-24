@@ -144,17 +144,14 @@ fn part_1() {
             escape += 1;
         }
 
-        if output.len() == bound {
-            dbg!(&output);
-
-            if output
+        if output.len() == bound
+            && output
                 .iter()
                 .enumerate()
                 .all(|(i, val)| *val == (i % 2) as i32)
-            {
-                println!("value is {count}");
-                break;
-            }
+        {
+            println!("value is {count}");
+            break;
         }
     }
 }
