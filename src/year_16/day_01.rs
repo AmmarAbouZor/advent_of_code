@@ -84,7 +84,7 @@ fn get_distance_first_visited_block() -> Option<i16> {
 
 fn part_2() {
     let distance = get_distance_first_visited_block().unwrap();
-    println!("distance to first visited block is {}", distance);
+    println!("distance to first visited block is {distance}");
 }
 
 pub fn run() {
