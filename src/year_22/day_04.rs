@@ -58,7 +58,7 @@ impl Pair {
 fn part_1() {
     let count = read_text_from_file("22", "04")
         .lines()
-        .map(|line| Pair::from(line))
+        .map(Pair::from)
         .filter(|pair| pair.fully_contained())
         .count();
 
@@ -68,7 +68,7 @@ fn part_1() {
 fn part_2() {
     let count = read_text_from_file("22", "04")
         .lines()
-        .map(|line| Pair::from(line))
+        .map(Pair::from)
         .filter(|pair| pair.overlap())
         .count();
 
