@@ -7,9 +7,10 @@ mod day_06;
 mod day_07;
 mod day_08;
 mod day_09;
+mod day_10;
 
 pub fn run() {
-    run_day(9);
+    run_day(10);
 }
 
 fn run_day(day: u8) {
@@ -23,6 +24,7 @@ fn run_day(day: u8) {
         7 => day_07::run(),
         8 => day_08::run(),
         9 => day_09::run(),
+        10 => day_10::run(),
         _ => unreachable!("day not implemented"),
     }
 }
