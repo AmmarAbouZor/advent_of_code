@@ -85,15 +85,11 @@ impl PartialOrd for Entry {
             let mut o_iter = o.iter();
 
             while ordering == Ordering::Equal {
-                let (s_option, o_option) = (s_iter.next(), o_iter.next());
-                if let (Some(s_item), Some(o_item)) = (s_option, o_option) {
-                    ordering = s_item.partial_cmp(o_item).unwrap();
-                } else if s_option.is_some() {
-                    ordering = Ordering::Greater;
-                } else if o_option.is_some() {
-                    ordering = Ordering::Less;
-                } else {
-                    break;
+                match (s_iter.next(), o_iter.next()) {
+                    (Some(s_item), Some(o_item)) => ordering = s_item.partial_cmp(o_item).unwrap(),
+                    (Some(_), None) => ordering = Ordering::Greater,
+                    (None, Some(_)) => ordering = Ordering::Less,
+                    (None, None) => break,
                 }
             }
 
