@@ -1,4 +1,7 @@
-use std::collections::HashSet;
+use std::{
+    collections::{HashMap, HashSet},
+    ops::RangeInclusive,
+};
 
 use crate::utls::read_text_from_file;
 
@@ -26,19 +29,19 @@ impl From<&str> for Sensor {
 
         let x = parts[2]
             .trim_start_matches("x=")
-            .trim_end_matches(",")
+            .trim_end_matches(',')
             .parse()
             .unwrap();
         let y = parts[3]
             .trim_start_matches("y=")
-            .trim_end_matches(":")
+            .trim_end_matches(':')
             .parse()
             .unwrap();
         let position = Point { x, y };
 
         let x = parts[8]
             .trim_start_matches("x=")
-            .trim_end_matches(",")
+            .trim_end_matches(',')
             .parse()
             .unwrap();
         let y = parts[9].trim_start_matches("y=").parse().unwrap();
@@ -67,41 +70,32 @@ impl Sensor {
         coverage
     }
 
-    fn get_converage_area(&self, max: isize) -> HashSet<Point> {
+    fn get_converage_area(&self, max: isize) -> HashMap<isize, RangeInclusive<isize>> {
         let radius =
             (self.position.x - self.beacon.x).abs() + (self.position.y - self.beacon.y).abs();
-        let mut coverage = HashSet::new();
+        let mut ranges_map = HashMap::new();
 
         if self.position.x - radius <= max || self.position.y <= max {
             for y in 0..=radius {
-                for x in 0..=radius - y {
-                    let p_x = self.position.x - x;
-                    let p_y = self.position.y - y;
-                    if (0..=max).contains(&p_x) && (0..=max).contains(&p_y) {
-                        coverage.insert(Point::new(p_x, p_y));
-                    }
+                let x_bound = radius - y;
 
-                    let p_x = self.position.x + x;
-                    let p_y = self.position.y - y;
-                    if (0..=max).contains(&p_x) && (0..=max).contains(&p_y) {
-                        coverage.insert(Point::new(p_x, p_y));
-                    }
+                if self.position.y + y <= max {
+                    ranges_map.insert(
+                        self.position.y + y,
+                        self.position.x - x_bound..=self.position.x + x_bound,
+                    );
+                }
 
-                    let p_x = self.position.x - x;
-                    let p_y = self.position.y + y;
-                    if (0..=max).contains(&p_x) && (0..=max).contains(&p_y) {
-                        coverage.insert(Point::new(p_x, p_y));
-                    }
-                    let p_x = self.position.x + x;
-                    let p_y = self.position.y + y;
-                    if (0..=max).contains(&p_x) && (0..=max).contains(&p_y) {
-                        coverage.insert(Point::new(p_x, p_y));
-                    }
+                if self.position.y - y <= max {
+                    ranges_map.insert(
+                        self.position.y - y,
+                        self.position.x - x_bound..=self.position.x + x_bound,
+                    );
                 }
             }
         }
 
-        coverage
+        ranges_map
     }
 }
 
@@ -135,16 +129,27 @@ fn part_1() {
 fn get_tuning_frequency(input: &str, max: isize) -> isize {
     let sensors = input.lines().map(Sensor::from);
 
-    let total_points_withen_area: HashSet<Point> = sensors
-        .flat_map(|sensor| sensor.get_converage_area(max))
-        .collect();
+    let mut ranges_map: HashMap<isize, Vec<RangeInclusive<isize>>> = HashMap::new();
 
-    for x in 0..=max {
-        for y in 0..=max {
-            let p = Point::new(x, y);
-            if !total_points_withen_area.contains(&p) {
-                return p.x * 4000000 + p.y;
+    sensors
+        .flat_map(|sensor| sensor.get_converage_area(max))
+        .for_each(|(y, rng)| {
+            let rngs = ranges_map.entry(y).or_insert(Vec::new());
+            rngs.push(rng);
+        });
+
+    for y in 0..=max {
+        let rngs = ranges_map.get_mut(&y).unwrap();
+        rngs.sort_by(|a, b| a.start().cmp(b.start()));
+
+        let mut pos = 0;
+
+        for rng in rngs {
+            if *rng.start() > pos {
+                return (pos + 1) * 4000000 + y;
             }
+
+            pos = pos.max(*rng.end());
         }
     }
 
@@ -156,7 +161,7 @@ fn part_2() {
 
     let answer = get_tuning_frequency(&input, 4000000);
 
-    println!("Part 1 answer is {answer}");
+    println!("Part 2 answer is {answer}");
 }
 
 pub fn run() {
