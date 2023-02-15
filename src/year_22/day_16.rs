@@ -53,11 +53,11 @@ impl<'a> State<'a> {
     fn calc(&self) -> usize {
         let mut res = 0;
 
-        for i in 0..=30 {
+        for i in 1..=30 {
             res += self
                 .opened_valves
                 .iter()
-                .filter(|(_, &time)| time >= i)
+                .filter(|(_, &time)| time > i)
                 .map(|(valve, _)| valve.rate)
                 .sum::<usize>();
         }
@@ -78,11 +78,11 @@ fn calc_most_pressure(input: &str) -> usize {
     let mut states = VecDeque::new();
     // let mut finished = BTreeSet::new();
 
-    states.push_front((0, State::new(valves.get("AA").unwrap())));
+    states.push_front((1, State::new(valves.get("AA").unwrap())));
 
     let mut result = 0;
 
-    while let Some((mut time, mut state)) = states.pop_back() {
+    while let Some((mut time, mut state)) = states.pop_front() {
         // if let Some(index) = states.iter().position(|(_, s)| *s == state) {
         //     // println!("entered if");
         //     // dbg!(&states);
