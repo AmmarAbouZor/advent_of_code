@@ -1,8 +1,8 @@
-use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use std::collections::{BTreeMap, BinaryHeap};
 
 use crate::utls::read_text_from_file;
 
-#[derive(Debug, Ord, PartialOrd, PartialEq, Eq)]
+#[derive(Debug, Clone, Ord, PartialOrd, PartialEq, Eq)]
 struct Valve {
     name: String,
     rate: usize,
@@ -34,6 +34,37 @@ impl From<&str> for Valve {
     }
 }
 
+#[derive(Debug, PartialOrd, Ord, PartialEq, Eq, Clone)]
+struct Pair<'a>(&'a str, &'a str);
+
+fn calc_distances_floyd(valves: &Vec<Valve>) -> BTreeMap<Pair, usize> {
+    let mut distances = BTreeMap::new();
+
+    valves.iter().for_each(|src| {
+        src.lead_to.iter().for_each(|target| {
+            distances.insert(Pair(src.name.as_str(), target.as_str()), 1);
+        })
+    });
+
+    let names: Vec<_> = valves.iter().map(|v| v.name.as_str()).collect();
+
+    for mid in names.iter() {
+        for src in names.iter() {
+            for target in names.iter() {
+                let Some(&src_mid) = distances.get(&Pair(src, mid)) else {continue};
+                let Some(&mid_target) = distances.get(&Pair(mid, target)) else {continue};
+
+                distances
+                    .entry(Pair(src, target))
+                    .and_modify(|val| *val = (*val).min(src_mid + mid_target))
+                    .or_insert(src_mid + mid_target);
+            }
+        }
+    }
+
+    distances
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct State<'a> {
     opened_valves: BTreeMap<&'a Valve, usize>,
@@ -57,7 +88,7 @@ impl<'a> State<'a> {
             res += self
                 .opened_valves
                 .iter()
-                .filter(|(_, &time)| time > i)
+                .filter(|(_, &time)| time < i)
                 .map(|(valve, _)| valve.rate)
                 .sum::<usize>();
         }
@@ -67,68 +98,46 @@ impl<'a> State<'a> {
 }
 
 fn calc_most_pressure(input: &str) -> usize {
-    let valves: BTreeMap<String, Valve> = input
-        .lines()
-        .map(Valve::from)
+    let valves: Vec<Valve> = input.lines().map(Valve::from).collect();
+
+    let distances = calc_distances_floyd(&valves);
+
+    let valves_with_rate: BTreeMap<String, Valve> = valves
+        .iter()
+        .cloned()
+        .filter(|va| va.name == "AA" || va.rate > 0)
         .map(|valva| (valva.name.clone(), valva))
         .collect();
 
-    let func_valves_count = valves.values().filter(|va| va.rate > 0).count();
+    let mut states = BinaryHeap::new();
 
-    let mut states = VecDeque::new();
-    // let mut finished = BTreeSet::new();
-
-    states.push_front((1, State::new(valves.get("AA").unwrap())));
+    states.push((1, State::new(valves_with_rate.get("AA").unwrap())));
 
     let mut result = 0;
 
-    while let Some((mut time, mut state)) = states.pop_front() {
-        // if let Some(index) = states.iter().position(|(_, s)| *s == state) {
-        //     // println!("entered if");
-        //     // dbg!(&states);
-        //     // dbg!(&state);
-        //     // println!("enter if");
-        //     let t = states.iter().nth(index).unwrap().0;
-        //     // dbg!((&t, &time));
-        //     if t >= time {
-        //         // println!("enter remove");
-        //         // states.remove(index).unwrap();
-        //     } else {
-        //         // println!("skipped");
-        //         continue;
-        //     }
-        // }
-        // println!("skiped if");
-        // dbg!(&states);
-        // dbg!(&state);
-
-        // println!("escape");
-
-        if state.opened_valves.len() == func_valves_count {
-            // dbg!(&state);
-            // if finished.insert(state.clone()) {
+    while let Some((time, mut state)) = states.pop() {
+        if time > 30 {
             let curr_res = state.calc();
             result = result.max(curr_res);
-            println!("{}-{}", curr_res, result);
-
-            // }
-        } else if time > 30 {
-            // max time exceeded
         } else {
-            time += 1;
             if state.current.rate > 0 && !state.opened_valves.contains_key(state.current) {
                 state.opened_valves.insert(state.current, time);
-                states.push_front((time, state));
+                states.push((time + 1, state));
             } else {
-                for valve in state.current.lead_to.iter() {
-                    state.current = valves.get(valve).unwrap();
-                    states.push_front((time, state.clone()));
+                for valve in valves_with_rate
+                    .values()
+                    .filter(|val| !state.opened_valves.contains_key(val))
+                {
+                    let add_time = distances
+                        .get(&Pair(state.current.name.as_str(), valve.name.as_str()))
+                        .unwrap();
+                    let mut state_cloned = state.clone();
+                    state_cloned.current = valve;
+                    states.push((time + add_time, state_cloned));
                 }
             }
         }
     }
-
-    // dbg!(finished);
 
     result
 }
