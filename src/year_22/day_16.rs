@@ -1,8 +1,10 @@
-use std::collections::{BTreeMap, BinaryHeap};
+use std::collections::{BTreeMap, BTreeSet, BinaryHeap};
+
+use itertools::Itertools;
 
 use crate::utls::read_text_from_file;
 
-#[derive(Debug, Clone, Ord, PartialOrd, PartialEq, Eq)]
+#[derive(Debug, Hash, Clone, Ord, PartialOrd, PartialEq, Eq)]
 struct Valve {
     name: String,
     rate: usize,
@@ -80,21 +82,20 @@ impl<'a> State<'a> {
             current,
         }
     }
+}
 
-    fn calc(&self) -> usize {
-        let mut res = 0;
+fn calc_pressure(opened_valves: &BTreeMap<&Valve, usize>, bound: usize) -> usize {
+    let mut res = 0;
 
-        for i in 1..=30 {
-            res += self
-                .opened_valves
-                .iter()
-                .filter(|(_, &time)| time < i)
-                .map(|(valve, _)| valve.rate)
-                .sum::<usize>();
-        }
-
-        res
+    for i in 1..=bound {
+        res += opened_valves
+            .iter()
+            .filter(|(_, &time)| time < i)
+            .map(|(valve, _)| valve.rate)
+            .sum::<usize>();
     }
+
+    res
 }
 
 fn calc_most_pressure(input: &str) -> usize {
@@ -117,7 +118,7 @@ fn calc_most_pressure(input: &str) -> usize {
 
     while let Some((time, mut state)) = states.pop() {
         if time > 30 {
-            let curr_res = state.calc();
+            let curr_res = calc_pressure(&state.opened_valves, 30);
             result = result.max(curr_res);
         } else {
             if state.current.rate > 0 && !state.opened_valves.contains_key(state.current) {
@@ -142,6 +143,82 @@ fn calc_most_pressure(input: &str) -> usize {
     result
 }
 
+fn calc_most_pressure_two(input: &str) -> usize {
+    let valves: Vec<Valve> = input.lines().map(Valve::from).collect();
+
+    let distances = calc_distances_floyd(&valves);
+
+    let valves_with_rate: BTreeMap<String, Valve> = valves
+        .iter()
+        .cloned()
+        .filter(|va| va.name == "AA" || va.rate > 0)
+        .map(|valva| (valva.name.clone(), valva))
+        .collect();
+
+    let mut states = BinaryHeap::new();
+
+    states.push((1, State::new(valves_with_rate.get("AA").unwrap())));
+
+    let mut results = BTreeSet::new();
+
+    while let Some((time, mut state)) = states.pop() {
+        if time > 26 {
+            results.insert(state.opened_valves);
+        } else {
+            if state.current.rate > 0 && !state.opened_valves.contains_key(state.current) {
+                state.opened_valves.insert(state.current, time);
+                states.push((time + 1, state));
+            } else {
+                for valve in valves_with_rate
+                    .values()
+                    .filter(|val| !state.opened_valves.contains_key(val))
+                {
+                    let add_time = distances
+                        .get(&Pair(state.current.name.as_str(), valve.name.as_str()))
+                        .unwrap();
+                    let mut state_cloned = state.clone();
+                    state_cloned.current = valve;
+                    states.push((time + add_time, state_cloned));
+                }
+            }
+        }
+    }
+
+    let mut results: Vec<_> = results.into_iter().collect();
+
+    results.sort_by_key(|a| calc_pressure(a, 26));
+
+    let results = results.into_iter().rev().take(500).collect_vec();
+
+    println!("start pressure calcs");
+
+    let mut pressure = 0;
+    // for (left, right) in results.iter().cartesian_product(results.iter()).unique() {
+    //     let mut clone = left.clone();
+    //     for a in left.keys() {
+    //         clone.entry(&a).and_modify(|val| {
+    //             *val = (*val).min(*right.get(a).unwrap_or(&usize::MAX));
+    //         });
+    //     }
+
+    //     pressure = pressure.max(calc_pressure(&clone, 26));
+    // }
+    for comb in results.iter().combinations(2).unique() {
+        let left = comb[0];
+        let right = comb[1];
+        let mut clone = left.clone();
+        for a in left.keys() {
+            clone.entry(&a).and_modify(|val| {
+                *val = (*val).min(*right.get(a).unwrap_or(&usize::MAX));
+            });
+        }
+
+        pressure = pressure.max(calc_pressure(&clone, 26));
+    }
+
+    pressure
+}
+
 fn part_1() {
     let input = read_text_from_file("22", "16");
 
@@ -150,10 +227,16 @@ fn part_1() {
     println!("Part 1 answer is {answer}");
 }
 
-fn part_2() {}
+fn part_2() {
+    let input = read_text_from_file("22", "16");
+
+    let answer = calc_most_pressure_two(&input);
+
+    println!("Part 2 answer is {answer}");
+}
 
 pub fn run() {
-    part_1();
+    // part_1();
     part_2();
 }
 
@@ -173,7 +256,13 @@ Valve II has flow rate=0; tunnels lead to valves AA, JJ
 Valve JJ has flow rate=21; tunnel leads to valve II";
 
     #[test]
+    #[ignore]
     fn test_part_1() {
         assert_eq!(calc_most_pressure(INPUT), 1651);
+    }
+
+    #[test]
+    fn test_part_2() {
+        assert_eq!(calc_most_pressure_two(INPUT), 1707);
     }
 }
