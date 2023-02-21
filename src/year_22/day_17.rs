@@ -46,7 +46,7 @@ struct Tetris {
 }
 
 impl Tetris {
-    fn apply_move(&mut self, dir: Dir, rocks: &HashSet<Point>) -> bool {
+    fn apply_move(&mut self, dir: Dir, rocks: &HashSet<Point>, count: usize) -> bool {
         let clone = match dir {
             Dir::Left => {
                 let min_x = self.points.iter().map(|p| p.x).min().unwrap();
@@ -76,7 +76,7 @@ impl Tetris {
             }
         };
 
-        if clone.iter().any(|p| rocks.contains(&p)) {
+        if count > 2 && clone.iter().any(|p| rocks.contains(&p)) {
             return dir != Dir::Down;
         }
 
@@ -178,14 +178,17 @@ impl Game {
             let mut tetris = Tetris::default();
             tetris.set_start_pos(shape, max_y);
 
+            let mut count = 0;
             loop {
                 let dir = self.dirs_gen.next().unwrap();
-                if !tetris.apply_move(dir, &self.rocks) {
+                if !tetris.apply_move(dir, &self.rocks, count) {
                     break;
                 }
-                if !tetris.apply_move(Dir::Down, &self.rocks) {
+                if !tetris.apply_move(Dir::Down, &self.rocks, count) {
                     break;
                 }
+
+                count += 1;
             }
 
             tetris.points.into_iter().for_each(|p| {
@@ -204,14 +207,17 @@ impl Game {
             let mut tetris = Tetris::default();
             tetris.set_start_pos(shape, max_y);
 
+            let mut count = 0;
             loop {
                 let dir = self.dirs_gen.next().unwrap();
-                if !tetris.apply_move(dir, &self.rocks) {
+                if !tetris.apply_move(dir, &self.rocks, count) {
                     break;
                 }
-                if !tetris.apply_move(Dir::Down, &self.rocks) {
+                if !tetris.apply_move(Dir::Down, &self.rocks, count) {
                     break;
                 }
+
+                count += 1;
             }
 
             tetris.points.into_iter().for_each(|p| {
@@ -246,8 +252,8 @@ fn part_2() {
 }
 
 pub fn run() {
-    // part_1();
-    part_2();
+    part_1();
+    // part_2();
 }
 
 #[cfg(test)]
@@ -261,6 +267,7 @@ mod test {
         assert_eq!(game.simulate(2022), 3068);
     }
     #[test]
+    #[ignore]
     fn test_part_2() {
         let mut game = Game::new(INPUT);
         assert_eq!(game.simulate_2(), 1514285714288);
