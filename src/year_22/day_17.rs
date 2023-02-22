@@ -1,4 +1,4 @@
-use std::collections::{BTreeSet, HashSet};
+use std::collections::BTreeMap;
 
 use crate::utls::read_text_from_file;
 
@@ -19,7 +19,7 @@ impl From<char> for Dir {
     }
 }
 
-#[derive(Debug, Default, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, PartialOrd, Ord, Default, Clone, Hash, Eq, PartialEq)]
 struct Point {
     x: usize,
     y: usize,
@@ -46,7 +46,7 @@ struct Tetris {
 }
 
 impl Tetris {
-    fn apply_move(&mut self, dir: Dir, rocks: &HashSet<Point>, count: usize) -> bool {
+    fn apply_move(&mut self, dir: Dir, rocks: &Vec<Point>, count: usize) -> bool {
         let clone = match dir {
             Dir::Left => {
                 let min_x = self.points.iter().map(|p| p.x).min().unwrap();
@@ -133,7 +133,7 @@ impl Tetris {
 struct Game {
     tetris_gen: Box<dyn Iterator<Item = Shape>>,
     dirs_gen: Box<dyn Iterator<Item = Dir>>,
-    rocks: HashSet<Point>,
+    rocks: Vec<Point>,
 }
 
 impl Game {
@@ -157,10 +157,10 @@ impl Game {
                 .cycle(),
         );
 
-        let mut rocks = HashSet::new();
+        let mut rocks = Vec::new();
 
         (0..7).for_each(|i| {
-            rocks.insert(Point::new(i, 0));
+            rocks.push(Point::new(i, 0));
         });
 
         Game {
@@ -191,28 +191,26 @@ impl Game {
             }
 
             tetris.points.into_iter().for_each(|p| {
-                assert!(self.rocks.insert(p));
+                self.rocks.push(p);
             });
-
-            if let Some(retain_limit) = self
-                .rocks
-                .iter()
-                .map(|p| p.y)
-                .max()
-                .unwrap()
-                .checked_sub(30)
-            {
-                self.rocks.retain(|p| p.y > retain_limit);
-            }
-            // let retain_limit = self.rocks.iter().map(|p| p.y).max().unwrap() - 50;
-            // self.rocks.retain(|p| p.y > retain_limit);
         }
 
         self.rocks.iter().map(|p| p.y).max().unwrap()
     }
 
     fn simulate_2(&mut self, target: usize) -> usize {
-        for i in 0..target {
+        let mut last_cycle_limit = 0;
+        let mut last_i = 0;
+
+        let mut first_appearence = None;
+        let mut cycle_diff = None;
+        let mut height_map = BTreeMap::new();
+
+        let mut found = false;
+
+        let mut i = 0;
+
+        while i < target {
             let shape = self.tetris_gen.next().unwrap();
             let max_y = self.rocks.iter().map(|p| p.y).max().unwrap();
             let mut tetris = Tetris::default();
@@ -232,25 +230,80 @@ impl Game {
             }
 
             tetris.points.into_iter().for_each(|p| {
-                assert!(self.rocks.insert(p));
+                self.rocks.push(p);
             });
 
-            if let Some(retain_limit) = self
-                .rocks
-                .iter()
-                .map(|p| p.y)
-                .max()
-                .unwrap()
-                .checked_sub(30)
-            {
-                self.rocks.retain(|p| p.y > retain_limit);
+            let height = self.rocks.iter().map(|p| p.y).max().unwrap();
+
+            height_map.insert(i, height);
+
+            if found {
+                i += 1;
+                continue;
             }
 
-            if i % 100000 == 0 {
-                dbg!(i);
+            let cycle_limit = height.checked_sub(15).unwrap_or(0);
+
+            let mut rest = Vec::new();
+
+            let check_range: Vec<usize> = self
+                .rocks
+                .iter()
+                .filter(|p| p.y > last_cycle_limit)
+                .filter(|p| {
+                    if p.y > cycle_limit {
+                        true
+                    } else {
+                        rest.push(p.x);
+                        false
+                    }
+                })
+                .map(|p| p.x)
+                .collect();
+
+            if check_range.is_empty() || rest.len() < check_range.len() {
+                i += 1;
+                continue;
             }
+
+            if rest
+                .windows(check_range.len())
+                .any(|sl| sl == check_range.as_slice())
+            {
+                last_cycle_limit = cycle_limit;
+
+                if first_appearence.is_none() {
+                    first_appearence = Some(i - last_i);
+                } else {
+                    cycle_diff = Some(i - last_i);
+
+                    let start_cycle = first_appearence.unwrap() - cycle_diff.unwrap();
+
+                    let cycles_count = (target - start_cycle) / cycle_diff.unwrap();
+
+                    i = start_cycle + cycles_count * cycle_diff.unwrap();
+                    dbg!(i);
+                    found = true;
+                    continue;
+                }
+                last_i = i;
+            }
+
+            i += 1;
         }
-        self.rocks.iter().map(|p| p.y).max().unwrap()
+
+        let start_cycle = first_appearence.unwrap() - cycle_diff.unwrap();
+
+        let height_cycle_diff = *height_map
+            .get(&(cycle_diff.unwrap() + first_appearence.unwrap()))
+            .unwrap()
+            - *height_map.get(&first_appearence.unwrap()).unwrap();
+
+        let cycles_count = (target - start_cycle) / cycle_diff.unwrap();
+
+        let last_height = height_map.get(&(target - 1)).unwrap();
+
+        last_height + ((cycles_count - 2) * height_cycle_diff) - 1
     }
 }
 
@@ -276,7 +329,7 @@ fn part_2() {
 
 pub fn run() {
     part_1();
-    // part_2();
+    part_2();
 }
 
 #[cfg(test)]
@@ -285,7 +338,6 @@ mod test {
     static INPUT: &str = r">>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>";
 
     #[test]
-    #[ignore]
     fn test_part_1() {
         let mut game = Game::new(INPUT);
         assert_eq!(game.simulate(2022), 3068);
