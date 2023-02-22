@@ -19,7 +19,7 @@ impl From<char> for Dir {
     }
 }
 
-#[derive(Debug, PartialOrd, Ord, Default, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, PartialOrd, Ord, Default, Clone, Eq, PartialEq)]
 struct Point {
     x: usize,
     y: usize,
@@ -46,7 +46,7 @@ struct Tetris {
 }
 
 impl Tetris {
-    fn apply_move(&mut self, dir: Dir, rocks: &Vec<Point>, count: usize) -> bool {
+    fn apply_move(&mut self, dir: Dir, rocks: &[Point], count: usize) -> bool {
         let clone = match dir {
             Dir::Left => {
                 let min_x = self.points.iter().map(|p| p.x).min().unwrap();
@@ -76,12 +76,13 @@ impl Tetris {
             }
         };
 
-        if count > 2 && clone.iter().any(|p| rocks.contains(&p)) {
+        if count > 2 && clone.iter().any(|p| rocks.contains(p)) {
             return dir != Dir::Down;
         }
 
         self.points = clone;
-        return true;
+
+        true
     }
 
     fn set_start_pos(&mut self, shape: Shape, max_y: usize) {
@@ -92,7 +93,6 @@ impl Tetris {
                 for i in 0..4 {
                     self.points.push(Point::new(i + 2, height));
                 }
-                assert_eq!(self.points.len(), 4);
             }
             Shape::Plus => {
                 self.points.push(Point::new(3, max_y + 6));
@@ -101,7 +101,6 @@ impl Tetris {
                     self.points.push(Point::new(i + 1, middle_hight));
                 }
                 self.points.push(Point::new(3, max_y + 4));
-                assert_eq!(self.points.len(), 5);
             }
             Shape::ReversedL => {
                 self.points.push(Point::new(4, max_y + 6));
@@ -109,13 +108,11 @@ impl Tetris {
                 for i in 2..=4 {
                     self.points.push(Point::new(i, max_y + 4));
                 }
-                assert_eq!(self.points.len(), 5);
             }
             Shape::IShape => {
                 for i in 0..4 {
                     self.points.push(Point::new(2, max_y + (3 - i) + 4));
                 }
-                assert_eq!(self.points.len(), 4);
             }
             Shape::BigPoint => {
                 for i in 0..2 {
@@ -124,7 +121,6 @@ impl Tetris {
                 for i in 2..4 {
                     self.points.push(Point::new(i, max_y + 4));
                 }
-                assert_eq!(self.points.len(), 4);
             }
         }
     }
@@ -242,7 +238,7 @@ impl Game {
                 continue;
             }
 
-            let cycle_limit = height.checked_sub(15).unwrap_or(0);
+            let cycle_limit = height.saturating_sub(15);
 
             let mut rest = Vec::new();
 
@@ -272,20 +268,20 @@ impl Game {
             {
                 last_cycle_limit = cycle_limit;
 
-                if first_appearence.is_none() {
-                    first_appearence = Some(i - last_i);
-                } else {
+                if let Some(first_appearence_index) = first_appearence {
                     cycle_diff = Some(i - last_i);
 
-                    let start_cycle = first_appearence.unwrap() - cycle_diff.unwrap();
+                    let start_cycle = first_appearence_index - cycle_diff.unwrap();
 
                     let cycles_count = (target - start_cycle) / cycle_diff.unwrap();
 
                     i = start_cycle + cycles_count * cycle_diff.unwrap();
-                    dbg!(i);
                     found = true;
                     continue;
+                } else {
+                    first_appearence = Some(i - last_i);
                 }
+
                 last_i = i;
             }
 
