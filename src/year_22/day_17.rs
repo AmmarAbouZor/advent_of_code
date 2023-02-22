@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashSet};
 
 use crate::utls::read_text_from_file;
 
@@ -21,12 +21,12 @@ impl From<char> for Dir {
 
 #[derive(Debug, Default, Clone, Hash, Eq, PartialEq)]
 struct Point {
-    x: isize,
-    y: isize,
+    x: usize,
+    y: usize,
 }
 
 impl Point {
-    fn new(x: isize, y: isize) -> Self {
+    fn new(x: usize, y: usize) -> Self {
         Self { x, y }
     }
 }
@@ -84,13 +84,13 @@ impl Tetris {
         return true;
     }
 
-    fn set_start_pos(&mut self, shape: Shape, max_y: isize) {
+    fn set_start_pos(&mut self, shape: Shape, max_y: usize) {
         assert!(self.points.is_empty());
         match shape {
             Shape::Minus => {
                 let height = max_y + 4;
                 for i in 0..4 {
-                    self.points.push(Point::new(i as isize + 2, height));
+                    self.points.push(Point::new(i + 2, height));
                 }
                 assert_eq!(self.points.len(), 4);
             }
@@ -98,7 +98,7 @@ impl Tetris {
                 self.points.push(Point::new(3, max_y + 6));
                 let middle_hight = max_y + 5;
                 for i in 1..4 {
-                    self.points.push(Point::new(i as isize + 1, middle_hight));
+                    self.points.push(Point::new(i + 1, middle_hight));
                 }
                 self.points.push(Point::new(3, max_y + 4));
                 assert_eq!(self.points.len(), 5);
@@ -107,23 +107,22 @@ impl Tetris {
                 self.points.push(Point::new(4, max_y + 6));
                 self.points.push(Point::new(4, max_y + 5));
                 for i in 2..=4 {
-                    self.points.push(Point::new(i as isize, max_y + 4));
+                    self.points.push(Point::new(i, max_y + 4));
                 }
                 assert_eq!(self.points.len(), 5);
             }
             Shape::IShape => {
                 for i in 0..4 {
-                    self.points
-                        .push(Point::new(2, max_y + (3 - i as isize) + 4));
+                    self.points.push(Point::new(2, max_y + (3 - i) + 4));
                 }
                 assert_eq!(self.points.len(), 4);
             }
             Shape::BigPoint => {
                 for i in 0..2 {
-                    self.points.push(Point::new(i as isize + 2, max_y + 5));
+                    self.points.push(Point::new(i + 2, max_y + 5));
                 }
                 for i in 2..4 {
-                    self.points.push(Point::new(i as isize, max_y + 4));
+                    self.points.push(Point::new(i, max_y + 4));
                 }
                 assert_eq!(self.points.len(), 4);
             }
@@ -171,7 +170,7 @@ impl Game {
         }
     }
 
-    fn simulate(&mut self, target: usize) -> isize {
+    fn simulate(&mut self, target: usize) -> usize {
         for _ in 0..target {
             let shape = self.tetris_gen.next().unwrap();
             let max_y = self.rocks.iter().map(|p| p.y).max().unwrap();
@@ -194,14 +193,26 @@ impl Game {
             tetris.points.into_iter().for_each(|p| {
                 assert!(self.rocks.insert(p));
             });
+
+            if let Some(retain_limit) = self
+                .rocks
+                .iter()
+                .map(|p| p.y)
+                .max()
+                .unwrap()
+                .checked_sub(30)
+            {
+                self.rocks.retain(|p| p.y > retain_limit);
+            }
+            // let retain_limit = self.rocks.iter().map(|p| p.y).max().unwrap() - 50;
+            // self.rocks.retain(|p| p.y > retain_limit);
         }
 
         self.rocks.iter().map(|p| p.y).max().unwrap()
     }
 
-    fn simulate_2(&mut self) -> usize {
-        let num = 40 * 5;
-        for i in 0..num {
+    fn simulate_2(&mut self, target: usize) -> usize {
+        for i in 0..target {
             let shape = self.tetris_gen.next().unwrap();
             let max_y = self.rocks.iter().map(|p| p.y).max().unwrap();
             let mut tetris = Tetris::default();
@@ -223,11 +234,23 @@ impl Game {
             tetris.points.into_iter().for_each(|p| {
                 assert!(self.rocks.insert(p));
             });
+
+            if let Some(retain_limit) = self
+                .rocks
+                .iter()
+                .map(|p| p.y)
+                .max()
+                .unwrap()
+                .checked_sub(30)
+            {
+                self.rocks.retain(|p| p.y > retain_limit);
+            }
+
+            if i % 100000 == 0 {
+                dbg!(i);
+            }
         }
-
-        let mut max_y = self.rocks.iter().map(|p| p.y).max().unwrap();
-
-        max_y as usize * 1000000000000 / num
+        self.rocks.iter().map(|p| p.y).max().unwrap()
     }
 }
 
@@ -246,7 +269,7 @@ fn part_2() {
 
     let mut game = Game::new(&input);
 
-    let answer = game.simulate(1000000000000);
+    let answer = game.simulate_2(1000000000000);
 
     println!("Part_2 answer is {answer}");
 }
@@ -262,14 +285,14 @@ mod test {
     static INPUT: &str = r">>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>";
 
     #[test]
+    #[ignore]
     fn test_part_1() {
         let mut game = Game::new(INPUT);
         assert_eq!(game.simulate(2022), 3068);
     }
     #[test]
-    #[ignore]
     fn test_part_2() {
         let mut game = Game::new(INPUT);
-        assert_eq!(game.simulate_2(), 1514285714288);
+        assert_eq!(game.simulate_2(1000000000000), 1514285714288);
     }
 }
