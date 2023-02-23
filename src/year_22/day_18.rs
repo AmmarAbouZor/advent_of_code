@@ -2,7 +2,7 @@ use std::{collections::BTreeSet, num::ParseIntError, str::FromStr};
 
 use crate::utls::read_text_from_file;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Ord, Eq)]
 struct Cube {
     x: isize,
     y: isize,
@@ -23,6 +23,10 @@ impl FromStr for Cube {
 }
 
 impl Cube {
+    fn new(x: isize, y: isize, z: isize) -> Self {
+        Self { x, y, z }
+    }
+
     fn calc_surface_area(&self, other_cubes: &[Cube]) -> usize {
         let mut sides = 6;
         let x_dir_cubes: Vec<&Cube> = other_cubes
@@ -69,56 +73,75 @@ fn calc_surface_area(input: &str) -> usize {
 }
 
 fn calc_exterior_surface(input: &str) -> usize {
-    let cubes: Vec<Cube> = input.lines().flat_map(Cube::from_str).collect();
+    let mut cubes: Vec<Cube> = input.lines().flat_map(Cube::from_str).collect();
 
-    let all_surface_area: usize = cubes.iter().map(|c| c.calc_surface_area(&cubes)).sum();
+    // let all_surface_area: usize = cubes.iter().map(|c| c.calc_surface_area(&cubes)).sum();
 
-    let mut x_gaps: BTreeSet<isize> = BTreeSet::new();
+    let mut x_gaps: BTreeSet<Cube> = BTreeSet::new();
 
     for cube in cubes.iter() {
         if cubes
             .iter()
-            .filter(|c| c.y == cube.y && c.z == cube.z && c.x > cube.x)
-            .all(|c| c.x - cube.x > 0)
+            .filter(|c| c.y == cube.y && c.z == cube.z)
+            .all(|c| c.x != cube.x + 1)
         {
-            x_gaps.insert(cube.x + 1);
+            x_gaps.insert(Cube {
+                x: cube.x + 1,
+                ..*cube
+            });
         }
     }
 
-    dbg!(x_gaps.len());
+    // dbg!(x_gaps.len());
+    // dbg!(&x_gaps);
 
-    let mut y_gaps: BTreeSet<(isize, isize)> = BTreeSet::new();
+    let mut y_gaps: BTreeSet<Cube> = BTreeSet::new();
 
-    for cube in x_gaps.iter().flat_map(|x| cubes.iter().find(|c| c.x == *x)) {
+    for cube in cubes.iter() {
         if cubes
             .iter()
-            .filter(|c| c.x == cube.x && c.z == cube.z && c.y > cube.y)
-            .all(|c| c.y - cube.y > 0)
+            .filter(|c| c.x == cube.x && c.z == cube.z)
+            .all(|c| c.y != cube.y + 1)
         {
-            y_gaps.insert((cube.x, cube.y + 1));
+            y_gaps.insert(Cube {
+                y: cube.y + 1,
+                ..*cube
+            });
         }
     }
 
-    dbg!(y_gaps.len());
+    // dbg!(y_gaps.len());
+    // dbg!(&y_gaps);
 
-    let mut z_gaps: BTreeSet<(isize, isize, isize)> = BTreeSet::new();
+    let mut z_gaps: BTreeSet<Cube> = BTreeSet::new();
 
-    for cube in y_gaps
+    for cube in cubes.iter() {
+        if cubes
+            .iter()
+            .filter(|c| c.x == cube.x && c.y == cube.y)
+            .all(|c| c.z != cube.z + 1)
+        {
+            z_gaps.insert(Cube {
+                z: cube.z + 1,
+                ..*cube
+            });
+        }
+    }
+
+    // dbg!(z_gaps.len());
+    // dbg!(&z_gaps);
+
+    // cubes.iter().map(|c| c.calc_surface_area(&cubes)).sum()
+
+    x_gaps
         .iter()
-        .flat_map(|(_x1, y2)| cubes.iter().find(|c| c.y == *y2))
-    {
-        if cubes
-            .iter()
-            .filter(|c| c.x == cube.x && c.y == cube.y && c.z > cube.z)
-            .all(|c| c.z - cube.z > 0)
-        {
-            z_gaps.insert((cube.x, cube.y, cube.z + 1));
-        }
-    }
+        .filter(|c| y_gaps.contains(&c) && z_gaps.contains(&c))
+        .for_each(|c| {
+            dbg!(c);
+            cubes.push(*c);
+        });
 
-    dbg!(z_gaps.len());
-
-    all_surface_area - (z_gaps.len() * 6)
+    cubes.iter().map(|c| c.calc_surface_area(&cubes)).sum()
 }
 
 fn part_1() {
