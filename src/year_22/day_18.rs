@@ -1,4 +1,8 @@
-use std::{collections::BTreeSet, num::ParseIntError, str::FromStr};
+use std::{
+    collections::{BTreeSet, BinaryHeap},
+    num::ParseIntError,
+    str::FromStr,
+};
 
 use crate::utls::read_text_from_file;
 
@@ -27,121 +31,97 @@ impl Cube {
         Self { x, y, z }
     }
 
-    fn calc_surface_area(&self, other_cubes: &[Cube]) -> usize {
-        let mut sides = 6;
-        let x_dir_cubes: Vec<&Cube> = other_cubes
-            .iter()
-            .filter(|cube| cube.y == self.y && cube.z == self.z)
-            .collect();
-        if x_dir_cubes.iter().any(|cube| cube.x - self.x == 1) {
-            sides -= 1;
-        }
-        if x_dir_cubes.iter().any(|cube| cube.x - self.x == -1) {
-            sides -= 1;
-        }
-
-        let y_dir_cubes: Vec<&Cube> = other_cubes
-            .iter()
-            .filter(|cube| cube.x == self.x && cube.z == self.z)
-            .collect();
-        if y_dir_cubes.iter().any(|cube| cube.y - self.y == 1) {
-            sides -= 1;
-        }
-        if y_dir_cubes.iter().any(|cube| cube.y - self.y == -1) {
-            sides -= 1;
-        }
-
-        let z_dir_cubes: Vec<&Cube> = other_cubes
-            .iter()
-            .filter(|cube| cube.y == self.y && cube.x == self.x)
-            .collect();
-        if z_dir_cubes.iter().any(|cube| cube.z - self.z == 1) {
-            sides -= 1;
-        }
-        if z_dir_cubes.iter().any(|cube| cube.z - self.z == -1) {
-            sides -= 1;
-        }
-
-        sides
+    fn get_possible_neighbors(&self) -> [Cube; 6] {
+        [
+            Cube {
+                x: self.x + 1,
+                ..*self
+            },
+            Cube {
+                x: self.x - 1,
+                ..*self
+            },
+            Cube {
+                y: self.y + 1,
+                ..*self
+            },
+            Cube {
+                y: self.y - 1,
+                ..*self
+            },
+            Cube {
+                z: self.z + 1,
+                ..*self
+            },
+            Cube {
+                z: self.z - 1,
+                ..*self
+            },
+        ]
     }
 }
 
 fn calc_surface_area(input: &str) -> usize {
-    let cubes: Vec<Cube> = input.lines().flat_map(Cube::from_str).collect();
+    let cubes: BTreeSet<Cube> = input.lines().flat_map(Cube::from_str).collect();
 
-    cubes.iter().map(|c| c.calc_surface_area(&cubes)).sum()
+    cubes
+        .iter()
+        .copied()
+        .flat_map(|c| c.get_possible_neighbors())
+        .filter(|c| !cubes.contains(c))
+        .count()
 }
 
 fn calc_exterior_surface(input: &str) -> usize {
-    let mut cubes: Vec<Cube> = input.lines().flat_map(Cube::from_str).collect();
+    let (mut min_x, mut max_x, mut min_y, mut max_y, mut min_z, mut max_z) = (
+        isize::MAX,
+        isize::MIN,
+        isize::MAX,
+        isize::MIN,
+        isize::MAX,
+        isize::MIN,
+    );
+    let cubes: BTreeSet<Cube> = input
+        .lines()
+        .flat_map(Cube::from_str)
+        .inspect(|&cube| {
+            min_x = min_x.min(cube.x);
+            max_x = max_x.max(cube.x);
+            min_y = min_y.min(cube.y);
+            max_y = max_y.max(cube.y);
+            min_z = min_z.min(cube.z);
+            max_z = max_z.max(cube.z);
+        })
+        .collect();
 
-    // let all_surface_area: usize = cubes.iter().map(|c| c.calc_surface_area(&cubes)).sum();
+    let mut exterior_heap = BinaryHeap::from([Cube::new(min_x - 1, min_y - 1, min_z - 1)]);
+    let mut exterior_neighbors = BTreeSet::from_iter(exterior_heap.iter().copied());
 
-    let mut x_gaps: BTreeSet<Cube> = BTreeSet::new();
+    let x_range = min_x - 1..=max_x + 1;
+    let y_range = min_y - 1..=max_y + 1;
+    let z_range = min_z - 1..=max_z + 1;
 
-    for cube in cubes.iter() {
-        if cubes
-            .iter()
-            .filter(|c| c.y == cube.y && c.z == cube.z)
-            .all(|c| c.x != cube.x + 1)
-        {
-            x_gaps.insert(Cube {
-                x: cube.x + 1,
-                ..*cube
-            });
+    while let Some(cube) = exterior_heap.pop() {
+        for neighbor in cube.get_possible_neighbors() {
+            if x_range.contains(&neighbor.x)
+                && y_range.contains(&neighbor.y)
+                && z_range.contains(&neighbor.z)
+                && !cubes.contains(&neighbor)
+            {
+                let is_new = exterior_neighbors.insert(neighbor);
+                if is_new {
+                    exterior_heap.push(neighbor);
+                }
+            }
         }
     }
 
-    // dbg!(x_gaps.len());
-    // dbg!(&x_gaps);
-
-    let mut y_gaps: BTreeSet<Cube> = BTreeSet::new();
-
-    for cube in cubes.iter() {
-        if cubes
-            .iter()
-            .filter(|c| c.x == cube.x && c.z == cube.z)
-            .all(|c| c.y != cube.y + 1)
-        {
-            y_gaps.insert(Cube {
-                y: cube.y + 1,
-                ..*cube
-            });
-        }
-    }
-
-    // dbg!(y_gaps.len());
-    // dbg!(&y_gaps);
-
-    let mut z_gaps: BTreeSet<Cube> = BTreeSet::new();
-
-    for cube in cubes.iter() {
-        if cubes
-            .iter()
-            .filter(|c| c.x == cube.x && c.y == cube.y)
-            .all(|c| c.z != cube.z + 1)
-        {
-            z_gaps.insert(Cube {
-                z: cube.z + 1,
-                ..*cube
-            });
-        }
-    }
-
-    // dbg!(z_gaps.len());
-    // dbg!(&z_gaps);
-
-    // cubes.iter().map(|c| c.calc_surface_area(&cubes)).sum()
-
-    x_gaps
+    cubes
         .iter()
-        .filter(|c| y_gaps.contains(&c) && z_gaps.contains(&c))
-        .for_each(|c| {
-            dbg!(c);
-            cubes.push(*c);
-        });
-
-    cubes.iter().map(|c| c.calc_surface_area(&cubes)).sum()
+        .copied()
+        .flat_map(|c| c.get_possible_neighbors())
+        .filter(|c| exterior_neighbors.contains(c))
+        .count()
 }
 
 fn part_1() {
@@ -184,7 +164,6 @@ mod test {
 2,3,5";
 
     #[test]
-    #[ignore]
     fn test_part_1() {
         assert_eq!(calc_surface_area(INPUT), 64);
     }
