@@ -16,6 +16,7 @@ fn calc_sum(input: &str) -> isize {
     }
 
     // calc the difference
+    // coord with value zero is our reference because it didn't move
     let origin = coords.iter().position(|val| *val == 0).unwrap();
     let offset = indexes.iter().position(|i| *i == origin).unwrap();
 
@@ -48,6 +49,7 @@ fn calc_sum_2(input: &str) -> isize {
     }
 
     // calc the difference
+    // coord with value zero is our reference because it didn't move
     let origin = coords.iter().position(|val| *val == 0).unwrap();
     let offset = indexes.iter().position(|i| *i == origin).unwrap();
 
