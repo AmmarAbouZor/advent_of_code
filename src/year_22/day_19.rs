@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, num::ParseIntError, str::FromStr};
+use std::{collections::VecDeque, num::ParseIntError, str::FromStr, sync::mpsc, thread};
 
 use crate::utls::read_text_from_file;
 
@@ -211,20 +211,33 @@ impl Blueprint {
 }
 
 fn calc_part_1(input: &str) -> usize {
-    input
-        .lines()
-        .flat_map(Blueprint::from_str)
-        .map(|print| print.get_score(24))
-        .sum()
+    let (tx, rx) = mpsc::channel();
+    for blue_print in input.lines().flat_map(Blueprint::from_str) {
+        let tx_clone = tx.clone();
+        thread::spawn(move || {
+            let score = blue_print.get_score(24);
+            tx_clone.send(score).unwrap();
+        });
+    }
+
+    drop(tx);
+
+    rx.into_iter().sum()
 }
 
 fn calc_part_2(input: &str) -> usize {
-    input
-        .lines()
-        .take(3)
-        .flat_map(Blueprint::from_str)
-        .map(|print| print.get_max_geodes(32))
-        .product()
+    let (tx, rx) = mpsc::channel();
+
+    for blue_print in input.lines().take(3).flat_map(Blueprint::from_str) {
+        let tx_clone = tx.clone();
+        thread::spawn(move || {
+            let score = blue_print.get_max_geodes(32);
+            tx_clone.send(score).unwrap();
+        });
+    }
+    drop(tx);
+
+    rx.into_iter().product()
 }
 
 fn part_1() {
