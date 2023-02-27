@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::utls::read_text_from_file;
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct Point {
     row: usize,
     col: usize,
@@ -50,7 +50,7 @@ impl From<&str> for Note {
                             '#' => Tile::Wall,
                             _ => panic!("invalid input"),
                         };
-                        (Point::new(line_index, col_index), tile)
+                        (Point::new(line_index + 1, col_index + 1), tile)
                     })
             })
             .collect();
@@ -91,12 +91,156 @@ impl From<&str> for Note {
     }
 }
 
+#[derive(Debug)]
+enum Facing {
+    Right = 0,
+    Down = 1,
+    Left = 2,
+    Up = 3,
+}
+
+#[derive(Debug)]
+struct State {
+    pos: Point,
+    facing: Facing,
+}
+
+impl State {
+    fn new(pos: Point, facing: Facing) -> Self {
+        Self { pos, facing }
+    }
+}
+
+impl Inst {
+    fn apply(&self, state: &mut State, map: &BTreeMap<Point, Tile>) {
+        match self {
+            Inst::RotateLeft => {
+                state.facing = match state.facing {
+                    Facing::Right => Facing::Up,
+                    Facing::Down => Facing::Right,
+                    Facing::Left => Facing::Down,
+                    Facing::Up => Facing::Left,
+                }
+            }
+            Inst::RotateRight => {
+                state.facing = match state.facing {
+                    Facing::Right => Facing::Down,
+                    Facing::Down => Facing::Left,
+                    Facing::Left => Facing::Up,
+                    Facing::Up => Facing::Right,
+                }
+            }
+            Inst::Move(num) => match state.facing {
+                Facing::Right => {
+                    let mut point = state.pos;
+                    for _ in 0..*num {
+                        point.col += 1;
+                        if let Some(tile) = map.get(&point) {
+                            match tile {
+                                Tile::Open => state.pos = point,
+                                Tile::Wall => break,
+                            }
+                        } else {
+                            let swap_col = *map
+                                .keys()
+                                .filter(|p| p.row == point.row)
+                                .map(|Point { row: _, col }| col)
+                                .min()
+                                .unwrap();
+                            point.col = swap_col;
+                            match map.get(&point).unwrap() {
+                                Tile::Open => state.pos = point,
+                                Tile::Wall => break,
+                            }
+                        }
+                    }
+                }
+                Facing::Down => {
+                    let mut point = state.pos;
+                    for _ in 0..*num {
+                        point.row += 1;
+                        if let Some(tile) = map.get(&point) {
+                            match tile {
+                                Tile::Open => state.pos = point,
+                                Tile::Wall => break,
+                            }
+                        } else {
+                            let swap_row = *map
+                                .keys()
+                                .filter(|p| p.col == point.col)
+                                .map(|Point { row, col: _ }| row)
+                                .min()
+                                .unwrap();
+                            point.row = swap_row;
+                            match map.get(&point).unwrap() {
+                                Tile::Open => state.pos = point,
+                                Tile::Wall => break,
+                            }
+                        }
+                    }
+                }
+                Facing::Left => {
+                    let mut point = state.pos;
+                    for _ in 0..*num {
+                        point.col -= 1;
+                        if let Some(tile) = map.get(&point) {
+                            match tile {
+                                Tile::Open => state.pos = point,
+                                Tile::Wall => break,
+                            }
+                        } else {
+                            let swap_col = *map
+                                .keys()
+                                .filter(|p| p.row == point.row)
+                                .map(|Point { row: _, col }| col)
+                                .max()
+                                .unwrap();
+                            point.col = swap_col;
+                            match map.get(&point).unwrap() {
+                                Tile::Open => state.pos = point,
+                                Tile::Wall => break,
+                            }
+                        }
+                    }
+                }
+                Facing::Up => {
+                    let mut point = state.pos;
+                    for _ in 0..*num {
+                        point.row -= 1;
+                        if let Some(tile) = map.get(&point) {
+                            match tile {
+                                Tile::Open => state.pos = point,
+                                Tile::Wall => break,
+                            }
+                        } else {
+                            let swap_row = *map
+                                .keys()
+                                .filter(|p| p.col == point.col)
+                                .map(|Point { row, col: _ }| row)
+                                .max()
+                                .unwrap();
+                            point.row = swap_row;
+                            match map.get(&point).unwrap() {
+                                Tile::Open => state.pos = point,
+                                Tile::Wall => break,
+                            }
+                        }
+                    }
+                }
+            },
+        }
+    }
+}
 fn get_final_password(input: &str) -> usize {
     let note = Note::from(input);
 
-    dbg!(note);
+    let mut state = State::new(Point::new(1, 1), Facing::Right);
 
-    1
+    for ins in note.instructions.iter() {
+        ins.apply(&mut state, &note.map);
+    }
+
+    1000 * state.pos.row + 4 * state.pos.col + state.facing as usize
 }
 
 fn part_1() {
