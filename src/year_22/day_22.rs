@@ -289,8 +289,8 @@ impl Inst {
                                             }
                                             // 2 -> 4
                                             150 => {
-                                                point.col = 100;
                                                 point.row = 151 - point.row;
+                                                point.col = 100;
                                                 state.facing = Facing::Left;
                                             }
                                             _ => unreachable!(),
@@ -299,8 +299,8 @@ impl Inst {
                                     // 3 -> 2
                                     (51..=100) => {
                                         assert!((51..=100).contains(&point.col));
-                                        point.row = 100;
                                         point.col = point.row + 50;
+                                        point.row = 50;
                                         state.facing = Facing::Up;
                                     }
                                     // 4 & 5
@@ -312,8 +312,8 @@ impl Inst {
                                             }
                                             // 4 -> 2
                                             100 => {
-                                                point.col = 150;
                                                 point.row = point.row.abs_diff(151);
+                                                point.col = 150;
                                                 state.facing = Facing::Left;
                                             }
                                             _ => unreachable!(),
@@ -322,8 +322,8 @@ impl Inst {
                                     // 6 -> 4
                                     (151..=200) => {
                                         assert!((1..=51).contains(&point.col));
-                                        point.row = 150;
                                         point.col = point.row - 100;
+                                        point.row = 150;
                                         state.facing = Facing::Up;
                                     }
                                     _ => unreachable!(),
@@ -332,7 +332,7 @@ impl Inst {
                         }
                         Facing::Left => {
                             // Easy path
-                            if point.col - 1 % 50 != 0 {
+                            if (point.col - 1) % 50 != 0 {
                                 point.col -= 1;
                             } else {
                                 // Cube calculations
@@ -342,8 +342,8 @@ impl Inst {
                                         match point.col {
                                             // 1 -> 5
                                             51 => {
-                                                point.col = 1;
                                                 point.row = 151 - point.row;
+                                                point.col = 1;
                                                 state.facing = Facing::Right;
                                             }
                                             // 2 -> 1
@@ -356,8 +356,8 @@ impl Inst {
                                     // 3 -> 5
                                     (51..=100) => {
                                         assert!((51..=100).contains(&point.col));
-                                        point.row = 101;
                                         point.col = point.row - 50;
+                                        point.row = 101;
                                         state.facing = Facing::Up;
                                     }
                                     // 4 & 5
@@ -365,8 +365,8 @@ impl Inst {
                                         match point.col {
                                             // 5 -> 1
                                             1 => {
-                                                point.col = 51;
                                                 point.row = point.row.abs_diff(151);
+                                                point.col = 51;
                                                 state.facing = Facing::Right;
                                             }
                                             // 4 -> 5
@@ -379,8 +379,8 @@ impl Inst {
                                     // 6 -> 1
                                     (151..=200) => {
                                         assert!((1..=51).contains(&point.col));
+                                        point.col = point.row - 100;
                                         point.row = 1;
-                                        point.col = point.row - 150;
                                         state.facing = Facing::Down;
                                     }
                                     _ => unreachable!(),
@@ -403,8 +403,8 @@ impl Inst {
                                             }
                                             // 2 -> 3
                                             (101..=150) => {
-                                                point.col = 100;
                                                 point.row = point.col - 50;
+                                                point.col = 100;
                                                 state.facing = Facing::Left;
                                             }
                                             _ => unreachable!(),
@@ -424,8 +424,8 @@ impl Inst {
                                             }
                                             // 4 -> 6
                                             (51..=100) => {
-                                                point.col = 50;
                                                 point.row = point.col + 100;
+                                                point.col = 50;
                                                 state.facing = Facing::Left;
                                             }
                                             _ => unreachable!(),
@@ -434,8 +434,8 @@ impl Inst {
                                     // 6 -> 2
                                     200 => {
                                         assert!((1..=51).contains(&point.col));
-                                        point.row = 1;
                                         point.col = point.col + 100;
+                                        point.row = 1;
                                         state.facing = Facing::Down;
                                     }
                                     _ => unreachable!(),
@@ -444,7 +444,7 @@ impl Inst {
                         }
                         Facing::Up => {
                             // Easy path
-                            if point.row - 1 % 50 != 0 {
+                            if (point.row - 1) % 50 != 0 {
                                 point.row -= 1;
                             } else {
                                 // Cube calculations
@@ -454,14 +454,14 @@ impl Inst {
                                         match point.col {
                                             // 1 -> 6
                                             (51..=100) => {
-                                                point.col = 1;
                                                 point.row = point.col + 100;
+                                                point.col = 1;
                                                 state.facing = Facing::Right;
                                             }
                                             // 2 -> 6
                                             (101..=150) => {
-                                                point.row = 200;
                                                 point.col = point.col - 100;
+                                                point.row = 200;
                                                 state.facing = Facing::Up;
                                             }
                                             _ => unreachable!(),
@@ -477,8 +477,8 @@ impl Inst {
                                         match point.col {
                                             // 5 -> 3
                                             (1..=50) => {
-                                                point.col = 51;
                                                 point.row = point.col + 50;
+                                                point.col = 51;
                                                 state.facing = Facing::Right;
                                             }
                                             // 4 -> 3
@@ -499,6 +499,8 @@ impl Inst {
                         }
                     }
 
+                    dbg!(&point);
+
                     match map.get(&point).expect(format!("{:?}", &point).as_str()) {
                         Tile::Open => state.pos = point,
                         Tile::Wall => break,
@@ -512,7 +514,7 @@ impl Inst {
 fn get_final_password(input: &str) -> usize {
     let note = Note::from(input);
 
-    let mut state = State::new(Point::new(1, 1), Facing::Right);
+    let mut state = State::new(Point::new(1, 51), Facing::Right);
 
     for ins in note.instructions.iter() {
         ins.apply(&mut state, &note.map);
@@ -524,7 +526,7 @@ fn get_final_password(input: &str) -> usize {
 fn get_final_password_cube(input: &str) -> usize {
     let note = Note::from(input);
 
-    let mut state = State::new(Point::new(1, 1), Facing::Right);
+    let mut state = State::new(Point::new(1, 51), Facing::Right);
 
     for ins in note.instructions.iter() {
         ins.apply_cube(&mut state, &note.map);
