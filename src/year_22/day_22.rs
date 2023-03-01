@@ -91,7 +91,7 @@ impl From<&str> for Note {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 enum Facing {
     Right = 0,
     Down = 1,
@@ -130,104 +130,100 @@ impl Inst {
                     Facing::Up => Facing::Right,
                 }
             }
-            Inst::Move(num) => match state.facing {
-                Facing::Right => {
-                    let mut point = state.pos;
-                    for _ in 0..*num {
-                        point.col += 1;
-                        if let Some(tile) = map.get(&point) {
-                            match tile {
-                                Tile::Open => state.pos = point,
-                                Tile::Wall => break,
+            Inst::Move(num) => {
+                for _ in 0..*num {
+                    match state.facing {
+                        Facing::Right => {
+                            let mut point = state.pos;
+                            point.col += 1;
+                            if let Some(tile) = map.get(&point) {
+                                match tile {
+                                    Tile::Open => state.pos = point,
+                                    Tile::Wall => break,
+                                }
+                            } else {
+                                let swap_col = *map
+                                    .keys()
+                                    .filter(|p| p.row == point.row)
+                                    .map(|Point { row: _, col }| col)
+                                    .min()
+                                    .unwrap();
+                                point.col = swap_col;
+                                match map.get(&point).unwrap() {
+                                    Tile::Open => state.pos = point,
+                                    Tile::Wall => break,
+                                }
                             }
-                        } else {
-                            let swap_col = *map
-                                .keys()
-                                .filter(|p| p.row == point.row)
-                                .map(|Point { row: _, col }| col)
-                                .min()
-                                .unwrap();
-                            point.col = swap_col;
-                            match map.get(&point).unwrap() {
-                                Tile::Open => state.pos = point,
-                                Tile::Wall => break,
+                        }
+                        Facing::Down => {
+                            let mut point = state.pos;
+                            point.row += 1;
+                            if let Some(tile) = map.get(&point) {
+                                match tile {
+                                    Tile::Open => state.pos = point,
+                                    Tile::Wall => break,
+                                }
+                            } else {
+                                let swap_row = *map
+                                    .keys()
+                                    .filter(|p| p.col == point.col)
+                                    .map(|Point { row, col: _ }| row)
+                                    .min()
+                                    .unwrap();
+                                point.row = swap_row;
+                                match map.get(&point).unwrap() {
+                                    Tile::Open => state.pos = point,
+                                    Tile::Wall => break,
+                                }
+                            }
+                        }
+                        Facing::Left => {
+                            let mut point = state.pos;
+                            point.col -= 1;
+                            if let Some(tile) = map.get(&point) {
+                                match tile {
+                                    Tile::Open => state.pos = point,
+                                    Tile::Wall => break,
+                                }
+                            } else {
+                                let swap_col = *map
+                                    .keys()
+                                    .filter(|p| p.row == point.row)
+                                    .map(|Point { row: _, col }| col)
+                                    .max()
+                                    .unwrap();
+                                point.col = swap_col;
+                                match map.get(&point).unwrap() {
+                                    Tile::Open => state.pos = point,
+                                    Tile::Wall => break,
+                                }
+                            }
+                        }
+                        Facing::Up => {
+                            let mut point = state.pos;
+                            point.row -= 1;
+                            if let Some(tile) = map.get(&point) {
+                                match tile {
+                                    Tile::Open => state.pos = point,
+                                    Tile::Wall => break,
+                                }
+                            } else {
+                                let swap_row = *map
+                                    .keys()
+                                    .filter(|p| p.col == point.col)
+                                    .map(|Point { row, col: _ }| row)
+                                    .max()
+                                    .unwrap();
+                                point.row = swap_row;
+                                match map.get(&point).unwrap() {
+                                    Tile::Open => state.pos = point,
+                                    Tile::Wall => break,
+                                }
                             }
                         }
                     }
                 }
-                Facing::Down => {
-                    let mut point = state.pos;
-                    for _ in 0..*num {
-                        point.row += 1;
-                        if let Some(tile) = map.get(&point) {
-                            match tile {
-                                Tile::Open => state.pos = point,
-                                Tile::Wall => break,
-                            }
-                        } else {
-                            let swap_row = *map
-                                .keys()
-                                .filter(|p| p.col == point.col)
-                                .map(|Point { row, col: _ }| row)
-                                .min()
-                                .unwrap();
-                            point.row = swap_row;
-                            match map.get(&point).unwrap() {
-                                Tile::Open => state.pos = point,
-                                Tile::Wall => break,
-                            }
-                        }
-                    }
-                }
-                Facing::Left => {
-                    let mut point = state.pos;
-                    for _ in 0..*num {
-                        point.col -= 1;
-                        if let Some(tile) = map.get(&point) {
-                            match tile {
-                                Tile::Open => state.pos = point,
-                                Tile::Wall => break,
-                            }
-                        } else {
-                            let swap_col = *map
-                                .keys()
-                                .filter(|p| p.row == point.row)
-                                .map(|Point { row: _, col }| col)
-                                .max()
-                                .unwrap();
-                            point.col = swap_col;
-                            match map.get(&point).unwrap() {
-                                Tile::Open => state.pos = point,
-                                Tile::Wall => break,
-                            }
-                        }
-                    }
-                }
-                Facing::Up => {
-                    let mut point = state.pos;
-                    for _ in 0..*num {
-                        point.row -= 1;
-                        if let Some(tile) = map.get(&point) {
-                            match tile {
-                                Tile::Open => state.pos = point,
-                                Tile::Wall => break,
-                            }
-                        } else {
-                            let swap_row = *map
-                                .keys()
-                                .filter(|p| p.col == point.col)
-                                .map(|Point { row, col: _ }| row)
-                                .max()
-                                .unwrap();
-                            point.row = swap_row;
-                            match map.get(&point).unwrap() {
-                                Tile::Open => state.pos = point,
-                                Tile::Wall => break,
-                            }
-                        }
-                    }
-                }
-            },
+            }
         }
     }
 
@@ -272,6 +268,7 @@ impl Inst {
             Inst::Move(num) => {
                 for _ in 0..*num {
                     let mut point = state.pos;
+                    let mut facing = state.facing;
                     match state.facing {
                         Facing::Right => {
                             // Easy path
@@ -291,7 +288,7 @@ impl Inst {
                                             150 => {
                                                 point.row = 151 - point.row;
                                                 point.col = 100;
-                                                state.facing = Facing::Left;
+                                                facing = Facing::Left;
                                             }
                                             _ => unreachable!(),
                                         }
@@ -301,7 +298,7 @@ impl Inst {
                                         assert!((51..=100).contains(&point.col));
                                         point.col = point.row + 50;
                                         point.row = 50;
-                                        state.facing = Facing::Up;
+                                        facing = Facing::Up;
                                     }
                                     // 4 & 5
                                     (101..=150) => {
@@ -312,9 +309,9 @@ impl Inst {
                                             }
                                             // 4 -> 2
                                             100 => {
-                                                point.row = point.row.abs_diff(151);
+                                                point.row = 151 - point.row;
                                                 point.col = 150;
-                                                state.facing = Facing::Left;
+                                                facing = Facing::Left;
                                             }
                                             _ => unreachable!(),
                                         }
@@ -324,7 +321,7 @@ impl Inst {
                                         assert!((1..=51).contains(&point.col));
                                         point.col = point.row - 100;
                                         point.row = 150;
-                                        state.facing = Facing::Up;
+                                        facing = Facing::Up;
                                     }
                                     _ => unreachable!(),
                                 }
@@ -344,7 +341,7 @@ impl Inst {
                                             51 => {
                                                 point.row = 151 - point.row;
                                                 point.col = 1;
-                                                state.facing = Facing::Right;
+                                                facing = Facing::Right;
                                             }
                                             // 2 -> 1
                                             101 => {
@@ -358,16 +355,16 @@ impl Inst {
                                         assert!((51..=100).contains(&point.col));
                                         point.col = point.row - 50;
                                         point.row = 101;
-                                        state.facing = Facing::Up;
+                                        facing = Facing::Up;
                                     }
                                     // 4 & 5
                                     (101..=150) => {
                                         match point.col {
                                             // 5 -> 1
                                             1 => {
-                                                point.row = point.row.abs_diff(151);
+                                                point.row = 151 - point.row;
                                                 point.col = 51;
-                                                state.facing = Facing::Right;
+                                                facing = Facing::Right;
                                             }
                                             // 4 -> 5
                                             51 => {
@@ -381,7 +378,7 @@ impl Inst {
                                         assert!((1..=51).contains(&point.col));
                                         point.col = point.row - 100;
                                         point.row = 1;
-                                        state.facing = Facing::Down;
+                                        facing = Facing::Down;
                                     }
                                     _ => unreachable!(),
                                 }
@@ -405,7 +402,7 @@ impl Inst {
                                             (101..=150) => {
                                                 point.row = point.col - 50;
                                                 point.col = 100;
-                                                state.facing = Facing::Left;
+                                                facing = Facing::Left;
                                             }
                                             _ => unreachable!(),
                                         }
@@ -426,17 +423,17 @@ impl Inst {
                                             (51..=100) => {
                                                 point.row = point.col + 100;
                                                 point.col = 50;
-                                                state.facing = Facing::Left;
+                                                facing = Facing::Left;
                                             }
                                             _ => unreachable!(),
                                         }
                                     }
                                     // 6 -> 2
                                     200 => {
-                                        assert!((1..=51).contains(&point.col));
+                                        assert!((1..=50).contains(&point.col));
                                         point.col = point.col + 100;
                                         point.row = 1;
-                                        state.facing = Facing::Down;
+                                        facing = Facing::Down;
                                     }
                                     _ => unreachable!(),
                                 }
@@ -456,13 +453,13 @@ impl Inst {
                                             (51..=100) => {
                                                 point.row = point.col + 100;
                                                 point.col = 1;
-                                                state.facing = Facing::Right;
+                                                facing = Facing::Right;
                                             }
                                             // 2 -> 6
                                             (101..=150) => {
                                                 point.col = point.col - 100;
                                                 point.row = 200;
-                                                state.facing = Facing::Up;
+                                                facing = Facing::Up;
                                             }
                                             _ => unreachable!(),
                                         }
@@ -479,7 +476,7 @@ impl Inst {
                                             (1..=50) => {
                                                 point.row = point.col + 50;
                                                 point.col = 51;
-                                                state.facing = Facing::Right;
+                                                facing = Facing::Right;
                                             }
                                             // 4 -> 3
                                             (51..=100) => {
@@ -490,7 +487,7 @@ impl Inst {
                                     }
                                     // 6 -> 5
                                     151 => {
-                                        assert!((1..=51).contains(&point.col));
+                                        assert!((1..=50).contains(&point.col));
                                         point.row -= 1;
                                     }
                                     _ => unreachable!(),
@@ -499,10 +496,13 @@ impl Inst {
                         }
                     }
 
-                    dbg!(&point);
+                    // dbg!(&point);
 
                     match map.get(&point).expect(format!("{:?}", &point).as_str()) {
-                        Tile::Open => state.pos = point,
+                        Tile::Open => {
+                            state.pos = point;
+                            state.facing = facing;
+                        }
                         Tile::Wall => break,
                     }
                 }
