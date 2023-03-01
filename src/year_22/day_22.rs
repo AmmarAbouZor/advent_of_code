@@ -65,9 +65,11 @@ impl From<&str> for Note {
             match inst_chars[index] {
                 'L' => instructions.push(Inst::RotateLeft),
                 'R' => instructions.push(Inst::RotateRight),
-                n if n.is_digit(10) => {
+                n if n.is_ascii_digit() => {
                     let mut moving_index = index;
-                    while moving_index < inst_chars.len() && inst_chars[moving_index].is_digit(10) {
+                    while moving_index < inst_chars.len()
+                        && inst_chars[moving_index].is_ascii_digit()
+                    {
                         moving_index += 1;
                     }
 
@@ -431,7 +433,7 @@ impl Inst {
                                     // 6 -> 2
                                     200 => {
                                         assert!((1..=50).contains(&point.col));
-                                        point.col = point.col + 100;
+                                        point.col += 100;
                                         point.row = 1;
                                         facing = Facing::Down;
                                     }
@@ -457,7 +459,7 @@ impl Inst {
                                             }
                                             // 2 -> 6
                                             (101..=150) => {
-                                                point.col = point.col - 100;
+                                                point.col -= 100;
                                                 point.row = 200;
                                                 facing = Facing::Up;
                                             }
@@ -496,9 +498,7 @@ impl Inst {
                         }
                     }
 
-                    // dbg!(&point);
-
-                    match map.get(&point).expect(format!("{:?}", &point).as_str()) {
+                    match map.get(&point).unwrap_or_else(|| panic!("{:?}", &point)) {
                         Tile::Open => {
                             state.pos = point;
                             state.facing = facing;
