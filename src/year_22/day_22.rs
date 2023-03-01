@@ -355,7 +355,7 @@ impl Inst {
                                         assert!((51..=100).contains(&point.col));
                                         point.col = point.row - 50;
                                         point.row = 101;
-                                        facing = Facing::Up;
+                                        facing = Facing::Down;
                                     }
                                     // 4 & 5
                                     (101..=150) => {
