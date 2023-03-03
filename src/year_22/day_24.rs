@@ -1,8 +1,8 @@
-use std::collections::{BTreeMap, BTreeSet, HashSet, VecDeque};
+use std::collections::BTreeSet;
 
 use crate::utls::read_text_from_file;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum Dir {
     Up,
     Down,
@@ -22,7 +22,7 @@ impl From<char> for Dir {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct Blizzard {
     pos: Point,
     dir: Dir,
@@ -77,6 +77,32 @@ impl Point {
     fn new(row: usize, col: usize) -> Self {
         Self { row, col }
     }
+
+    fn get_possible_poss(
+        &self,
+        bliz_set: &BTreeSet<Point>,
+        width: usize,
+        height: usize,
+    ) -> Vec<Point> {
+        let movements = [
+            Point::new(self.row, self.col + 1),
+            Point::new(self.row, self.col.saturating_sub(1)),
+            Point::new(self.row + 1, self.col),
+            Point::new(self.row.saturating_sub(1), self.col),
+            Point::new(self.row, self.col),
+        ];
+
+        movements
+            .into_iter()
+            .filter(|p| {
+                (p.row > 0 || (p.row == 0 && p.col == 1))
+                    && p.col > 0
+                    && (p.row < height - 1 || (p.row == height - 1 && p.col == width - 2))
+                    && p.col < width - 1
+                    && !bliz_set.contains(p)
+            })
+            .collect()
+    }
 }
 
 fn fetch_blizzards(input: &str) -> (Vec<Blizzard>, usize, usize) {
@@ -84,7 +110,7 @@ fn fetch_blizzards(input: &str) -> (Vec<Blizzard>, usize, usize) {
 
     let blizzards = (1..lines.len() - 1)
         .flat_map(|row| {
-            lines[1]
+            lines[row]
                 .chars()
                 .enumerate()
                 .filter(|(_, ch)| !['#', '.'].contains(ch))
@@ -99,97 +125,76 @@ fn fetch_blizzards(input: &str) -> (Vec<Blizzard>, usize, usize) {
     )
 }
 
-#[derive(Debug, Clone)]
-struct State {
-    minutes: usize,
-    current_pos: Point,
-}
-impl State {
-    fn get_possibilities(&self, blizzards: &[Blizzard], width: usize, height: usize) -> Vec<Point> {
-        let movements = [
-            Point::new(self.current_pos.row, self.current_pos.col + 1),
-            Point::new(self.current_pos.row, self.current_pos.col - 1),
-            Point::new(self.current_pos.row + 1, self.current_pos.col),
-            Point::new(self.current_pos.row - 1, self.current_pos.col),
-        ];
-
-        movements
-            .into_iter()
-            .filter(|p| {
-                p.row > 0
-                    && p.col > 0
-                    && p.row < height - 1
-                    && p.col < width - 1
-                    && blizzards.iter().all(|bliz| bliz.pos != *p)
-            })
-            .collect()
-    }
-}
-
 fn calc_min_minutes(input: &str) -> usize {
     let (mut blizzards, height, width) = fetch_blizzards(input);
-    let target = Point::new(height - 2, width - 2);
+    let target = Point::new(height - 1, width - 2);
+    let mut current_poss = BTreeSet::from([Point::new(0, 1)]);
 
-    // dbg!(&blizzards);
-    // dbg!(&height);
-    // dbg!(&width);
-    // dbg!(&start);
-    // dbg!(&target);
+    for mins in 1.. {
+        blizzards
+            .iter_mut()
+            .for_each(|b| b.apply_move(width, height));
 
-    blizzards
-        .iter_mut()
-        .for_each(|b| b.apply_move(width, height));
+        let bliz_set: BTreeSet<_> = blizzards.iter().map(|bl| bl.pos).collect();
+        current_poss = current_poss
+            .into_iter()
+            .flat_map(|p| p.get_possible_poss(&bliz_set, width, height))
+            .collect();
 
-    let mut bliz_map = BTreeMap::from([(1, blizzards)]);
-
-    let pos = Point::new(1, 1);
-
-    let one_move_state = State {
-        minutes: 1,
-        current_pos: pos,
-    };
-
-    let mut states = VecDeque::from([one_move_state]);
-    let mut min_score = 25;
-
-    while let Some(state) = states.pop_back() {
-        // dbg!(&state.current_pos);
-        if state.current_pos == target {
-            min_score = min_score.min(state.minutes);
-            dbg!(&min_score);
-            continue;
+        if current_poss.contains(&target) {
+            return mins;
         }
 
-        // already past the best we have
-        if state.minutes > min_score {
-            continue;
-        }
-
-        if !bliz_map.contains_key(&(state.minutes + 1)) {
-            let mut before = bliz_map.get(&(state.minutes)).unwrap().clone();
-
-            before.iter_mut().for_each(|b| b.apply_move(width, height));
-
-            bliz_map.insert(state.minutes + 1, before);
-        }
-
-        let blizzards = bliz_map.get(&(state.minutes + 1)).unwrap();
-        let possibilities = state.get_possibilities(blizzards, width, height);
-
-        //wait option
-        let mut clone = state.clone();
-        clone.minutes += 1;
-        states.push_front(clone);
-
-        for pos in possibilities {
-            let mut clone = state.clone();
-            clone.minutes += 1;
-            clone.current_pos = pos;
-            states.push_back(clone);
-        }
+        assert!(!current_poss.is_empty());
     }
 
-    min_score
+    unreachable!();
+}
+
+fn calc_min_minutes_repeated(input: &str) -> usize {
+    let (mut blizzards, height, width) = fetch_blizzards(input);
+    let end = Point::new(height - 1, width - 2);
+    let start = Point::new(0, 1);
+
+    let mut target = end;
+    let mut current_poss = BTreeSet::from([start]);
+
+    let mut count = 0;
+
+    for mins in 1.. {
+        blizzards
+            .iter_mut()
+            .for_each(|b| b.apply_move(width, height));
+
+        let bliz_set: BTreeSet<_> = blizzards.iter().map(|bl| bl.pos).collect();
+        current_poss = current_poss
+            .into_iter()
+            .flat_map(|p| p.get_possible_poss(&bliz_set, width, height))
+            .collect();
+
+        if current_poss.contains(&target) {
+            match count {
+                0 => {
+                    target = start;
+                    current_poss = BTreeSet::from([end]);
+                    count += 1;
+                }
+                1 => {
+                    target = end;
+                    current_poss = BTreeSet::from([start]);
+                    count += 1;
+                }
+                2 => {
+                    return mins;
+                }
+                _ => unreachable!(),
+            }
+        }
+
+        assert!(!current_poss.is_empty());
+    }
+
+    unreachable!();
 }
 
 fn part_1() {
@@ -200,7 +205,13 @@ fn part_1() {
     println!("Part 1 answer is {answer}");
 }
 
-fn part_2() {}
+fn part_2() {
+    let input = read_text_from_file("22", "24");
+
+    let answer = calc_min_minutes_repeated(&input);
+
+    println!("Part 2 answer is {answer}");
+}
 
 pub fn run() {
     part_1();
@@ -221,5 +232,9 @@ mod test {
     #[test]
     fn test_part_1() {
         assert_eq!(calc_min_minutes(INPUT), 18);
+    }
+    #[test]
+    fn test_part_2() {
+        assert_eq!(calc_min_minutes_repeated(INPUT), 54);
     }
 }
