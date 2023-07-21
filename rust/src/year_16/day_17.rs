@@ -22,9 +22,7 @@ fn get_solutions(input: &str) -> Vec<String> {
 
     let is_char_valid = |ch: char| ch > 'a';
 
-    while !states.is_empty() {
-        let state = states.pop().unwrap();
-
+    while let Some(state) = states.pop() {
         if state.reached_target() {
             solutions.push(state.path);
             continue;

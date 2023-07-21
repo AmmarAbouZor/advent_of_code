@@ -134,7 +134,7 @@ fn get_humn_val(input: &str) -> isize {
 
     // reverse humn from my input
     // rqmm: humn - jcmg
-    let mut humn = monkeys.iter_mut().find(|m| m.name == "humn").unwrap();
+    let humn = monkeys.iter_mut().find(|m| m.name == "humn").unwrap();
     humn.job = Job::Calc(Calculation {
         left: "rqmm".to_owned(),
         right: "jcmg".to_owned(),
