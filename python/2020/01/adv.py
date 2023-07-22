@@ -38,7 +38,7 @@ def run():
     answer_1 = part_1(lines)
     print(f"Part 1 answer is {answer_1}")
     answer_2 = part_2(lines)
-    print(f"Part 1 answer is {answer_2}")
+    print(f"Part 2 answer is {answer_2}")
 
 
 run()
