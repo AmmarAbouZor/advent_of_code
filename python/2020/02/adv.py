@@ -3,7 +3,7 @@ def read_input_lines():
         return f.read().splitlines()
 
 
-def part_1(input):
+def part_1(input: list[str]):
     valid_password = 0
 
     for line in input:
@@ -20,7 +20,7 @@ def part_1(input):
     return valid_password
 
 
-def part_2(input):
+def part_2(input: list[str]):
     valid_password = 0
 
     for line in input:

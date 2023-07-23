@@ -6,7 +6,7 @@ def get_input_lines():
         return f.read().splitlines()
 
 
-def part_1(input_lines):
+def part_1(input_lines: list[str]):
     nums = (int(line) for line in input_lines)
     map = {}
 
@@ -22,7 +22,7 @@ def part_1(input_lines):
 
 
 # Just normal iteration with a Time complexity of huge O(n3)
-def part_2(input_lines):
+def part_2(input_lines: list[str]):
     nums = [int(line) for line in input_lines]
     for num_1 in nums:
         for num_2 in nums:
