@@ -13,7 +13,7 @@ import os
 
 INPUT_FILE = "input.txt"
 CODE_FILE = "adv.py"
-CODE_CONTENT = """def get_input_lines():
+CODE_CONTENT = """def get_input_lines() -> list[str]:
     with open("input.txt") as f:
         return f.read().splitlines()"""
 
