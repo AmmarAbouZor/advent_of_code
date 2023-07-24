@@ -1,12 +1,12 @@
 TARGET = 2020
 
 
-def get_input_lines():
+def get_input_lines() -> list[str]:
     with open("input.txt") as f:
         return f.read().splitlines()
 
 
-def part_1(input_lines: list[str]):
+def part_1(input_lines: list[str]) -> int:
     nums = (int(line) for line in input_lines)
     map = {}
 
@@ -19,10 +19,11 @@ def part_1(input_lines: list[str]):
             map[TARGET - num] = num
         else:
             return num * num_2
+    return -1
 
 
 # Just normal iteration with a Time complexity of huge O(n3)
-def part_2(input_lines: list[str]):
+def part_2(input_lines: list[str]) -> int:
     nums = [int(line) for line in input_lines]
     for num_1 in nums:
         for num_2 in nums:
@@ -31,6 +32,7 @@ def part_2(input_lines: list[str]):
                     continue
                 if num_1 + num_2 + num_3 == TARGET:
                     return num_1 * num_2 * num_3
+    return -1
 
 
 def run():

@@ -1,9 +1,9 @@
-def read_input_lines():
+def read_input_lines() -> list[str]:
     with open("input.txt") as f:
         return f.read().splitlines()
 
 
-def part_1(input: list[str]):
+def part_1(input: list[str]) -> int:
     valid_password = 0
 
     for line in input:
@@ -20,7 +20,7 @@ def part_1(input: list[str]):
     return valid_password
 
 
-def part_2(input: list[str]):
+def part_2(input: list[str]) -> int:
     valid_password = 0
 
     for line in input:
