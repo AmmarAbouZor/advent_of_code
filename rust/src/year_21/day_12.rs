@@ -51,7 +51,7 @@ fn create_graph(input: &str) -> HashMap<Node, Vec<Node>> {
     graph
 }
 
-fn find_distinct_paths(input: &str) -> usize {
+fn find_distinct_paths(input: &str, allow_one_duplicate: bool) -> usize {
     let graph = create_graph(input);
 
     let mut states: Vec<_> = graph
@@ -98,65 +98,7 @@ fn find_distinct_paths(input: &str) -> usize {
 
             if let Node::Small(name) = node {
                 if !cloned_state.visited_small.insert(name.clone()) {
-                    continue;
-                }
-            }
-
-            states.push(cloned_state);
-        }
-    }
-
-    ways_count
-}
-
-fn find_distinct_paths_with_one_duplicate(input: &str) -> usize {
-    let graph = create_graph(input);
-
-    let mut states: Vec<_> = graph
-        .get(&Node::Start)
-        .unwrap()
-        .iter()
-        .map(|node| {
-            let way = vec![Node::Start, node.clone()];
-            let mut visited_small = HashSet::new();
-            if let Node::Small(name) = node {
-                visited_small.insert(name.clone());
-            }
-            WayState {
-                way,
-                visited_small,
-                used_duplicate_small: false,
-            }
-        })
-        .collect();
-
-    let mut ways_hash = HashSet::new();
-
-    let mut ways_count = 0;
-
-    while let Some(state) = states.pop() {
-        let last_node = state.way.last().unwrap();
-
-        if last_node == &Node::End {
-            ways_count += 1;
-            continue;
-        }
-
-        if last_node == &Node::Start {
-            continue;
-        }
-
-        for node in graph.get(last_node).unwrap().iter() {
-            let mut cloned_state = state.clone();
-
-            cloned_state.way.push(node.clone());
-            if !ways_hash.insert(cloned_state.way.clone()) {
-                continue;
-            }
-
-            if let Node::Small(name) = node {
-                if !cloned_state.visited_small.insert(name.clone()) {
-                    if !cloned_state.used_duplicate_small {
+                    if allow_one_duplicate && !cloned_state.used_duplicate_small {
                         cloned_state.used_duplicate_small = true;
                     } else {
                         continue;
@@ -173,14 +115,14 @@ fn find_distinct_paths_with_one_duplicate(input: &str) -> usize {
 
 fn part_1() {
     let input = read_text_from_file("21", "12");
-    let answer = find_distinct_paths(&input);
+    let answer = find_distinct_paths(&input, false);
 
     println!("Part 1 answer is {answer}");
 }
 
 fn part_2() {
     let input = read_text_from_file("21", "12");
-    let answer = find_distinct_paths_with_one_duplicate(&input);
+    let answer = find_distinct_paths(&input, true);
 
     println!("Part 2 answer is {answer}");
 }
@@ -237,15 +179,15 @@ start-RW
 
     #[test]
     fn test_part_1() {
-        assert_eq!(find_distinct_paths(INPUT_1), 10);
-        assert_eq!(find_distinct_paths(INPUT_2), 19);
-        assert_eq!(find_distinct_paths(INPUT_3), 226);
+        assert_eq!(find_distinct_paths(INPUT_1, false), 10);
+        assert_eq!(find_distinct_paths(INPUT_2, false), 19);
+        assert_eq!(find_distinct_paths(INPUT_3, false), 226);
     }
 
     #[test]
     fn test_part_2() {
-        assert_eq!(find_distinct_paths_with_one_duplicate(INPUT_1), 36);
-        assert_eq!(find_distinct_paths_with_one_duplicate(INPUT_2), 103);
-        assert_eq!(find_distinct_paths_with_one_duplicate(INPUT_3), 3509);
+        assert_eq!(find_distinct_paths(INPUT_1, true), 36);
+        assert_eq!(find_distinct_paths(INPUT_2, true), 103);
+        assert_eq!(find_distinct_paths(INPUT_3, true), 3509);
     }
 }
