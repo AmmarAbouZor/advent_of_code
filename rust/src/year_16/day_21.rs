@@ -118,7 +118,7 @@ fn part_1() {
 fn part_2() {
     let commands = read_commands();
 
-    let input = vec!['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+    let input = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 
     let answer = input
         .iter()
