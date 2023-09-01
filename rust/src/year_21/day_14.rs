@@ -4,22 +4,25 @@ use crate::utls::read_text_from_file;
 
 #[derive(Debug)]
 struct Polymor {
-    template: Vec<char>,
-    insert_map: HashMap<Vec<char>, char>,
+    template: Vec<u8>,
+    insert_map: HashMap<Vec<u8>, u8>,
 }
 
 impl From<&str> for Polymor {
     fn from(input: &str) -> Self {
         let (template, insertions) = input.split_once("\n\n").unwrap();
 
-        let template = template.chars().collect();
+        let template = template.as_bytes().to_vec();
 
         let insert_map = insertions
             .lines()
             .map(|line| {
                 let (pair, insertion) = line.split_once(" -> ").unwrap();
 
-                (pair.chars().collect(), insertion.chars().next().unwrap())
+                (
+                    pair.as_bytes().to_vec(),
+                    *insertion.as_bytes().first().unwrap(),
+                )
             })
             .collect();
 
@@ -115,4 +118,3 @@ CN -> C
         assert_eq!(calc_diff(INPUT, 40), 2188189693529);
     }
 }
-
