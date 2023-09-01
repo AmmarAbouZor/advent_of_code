@@ -8,7 +8,7 @@ def get_input_lines() -> list[str]:
 
 def part_1(input_lines: list[str]) -> int:
     nums = (int(line) for line in input_lines)
-    map = {}
+    map: dict[int, int] = {}
 
     # The Idea to save the target of the each number as a key in a map which with the number itself
     # This reduces the time complexity to O(n)
