@@ -42,6 +42,21 @@ def part_1():
     print(f"Part 1 answer is {answer}")
 
 
+def part_2():
+    input = get_input_lines()
+    booked_set = {calc_code_score(line) for line in input}
+    free_ids: list[int] = []
+    for row in range(128):
+        for col in range(8):
+            id = row * 8 + col
+            if id not in booked_set:
+                free_ids.append(id)
+    for idx in range(len(free_ids)):
+        if free_ids[idx + 1] - free_ids[idx] != 1:
+            print(f"Part 2 answer is {free_ids[idx + 1]}")
+            break
+
+
 def test():
     test_input = {
         "FBFBBFFRLR": 357,
@@ -59,3 +74,4 @@ def test():
 
 test()
 part_1()
+part_2()
