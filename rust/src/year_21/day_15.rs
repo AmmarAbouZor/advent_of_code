@@ -35,12 +35,12 @@ impl Grid {
         // Start point risk is ignored
         stack.push((Reverse(0), 0, 0));
 
-        while let Some((cost, row, col)) = stack.pop() {
+        while let Some((Reverse(cost), row, col)) = stack.pop() {
             if (row, col) == (width - 1, height - 1) {
-                return cost.0;
+                return cost;
             }
 
-            if cost.0 > dist[row][col] {
+            if cost > dist[row][col] {
                 continue;
             }
 
@@ -51,7 +51,7 @@ impl Grid {
                 (row, col.wrapping_sub(1)),
             ] {
                 let cost_next = match self.cells.get(row_next).and_then(|r| r.get(col_next)) {
-                    Some(risk) => cost.0 + risk,
+                    Some(risk) => cost + risk,
                     None => continue,
                 };
 
