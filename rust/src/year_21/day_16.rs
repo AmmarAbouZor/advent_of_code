@@ -3,14 +3,27 @@ use crate::utls::read_text_from_file;
 #[derive(Debug)]
 enum PacketType {
     Literal,
-    Operator,
+    Sum,
+    Product,
+    Minimum,
+    Maximum,
+    GreaterThan,
+    LessThan,
+    Equal,
 }
 
 impl From<usize> for PacketType {
     fn from(value: usize) -> Self {
         match value {
+            0 => PacketType::Sum,
+            1 => PacketType::Product,
+            2 => PacketType::Minimum,
+            3 => PacketType::Maximum,
             4 => PacketType::Literal,
-            _ => PacketType::Operator,
+            5 => PacketType::GreaterThan,
+            6 => PacketType::LessThan,
+            7 => PacketType::Equal,
+            _ => unreachable!("Invalid input for PacketType"),
         }
     }
 }
@@ -25,7 +38,7 @@ fn decode_version_sum(input: &str) -> usize {
 
     let mut idx = 0;
 
-    decode_packet(bin_slice, &mut idx, &mut versions);
+    decode_packet_version(bin_slice, &mut idx, &mut versions);
 
     versions.into_iter().sum()
 }
@@ -38,7 +51,7 @@ fn hex_to_binary(hex: &str) -> String {
         .collect()
 }
 
-fn decode_packet(binary: &[u8], idx: &mut usize, versions: &mut Vec<usize>) {
+fn decode_packet_version(binary: &[u8], idx: &mut usize, versions: &mut Vec<usize>) {
     let version = binary_to_num(&binary[*idx..*idx + 3]);
     *idx += 3;
     versions.push(version);
@@ -50,7 +63,7 @@ fn decode_packet(binary: &[u8], idx: &mut usize, versions: &mut Vec<usize>) {
         PacketType::Literal => {
             let _ = parse_literal(binary, idx);
         }
-        PacketType::Operator => parse_operator(binary, idx, versions),
+        _ => parse_operator_for_version(binary, idx, versions),
     }
 }
 
@@ -70,7 +83,7 @@ fn parse_literal(binary: &[u8], idx: &mut usize) -> usize {
     usize::from_str_radix(literal_value.as_str(), 2).unwrap()
 }
 
-fn parse_operator(binary: &[u8], idx: &mut usize, versions: &mut Vec<usize>) {
+fn parse_operator_for_version(binary: &[u8], idx: &mut usize, versions: &mut Vec<usize>) {
     let lenght_type_id = binary[*idx];
     *idx += 1;
     if lenght_type_id == b'0' {
@@ -78,13 +91,13 @@ fn parse_operator(binary: &[u8], idx: &mut usize, versions: &mut Vec<usize>) {
         *idx += 15;
         let start_idx = *idx;
         while *idx < start_idx + bit_lenght {
-            decode_packet(binary, idx, versions);
+            decode_packet_version(binary, idx, versions);
         }
     } else {
         let packets_count = binary_to_num(&binary[*idx..*idx + 11]);
         *idx += 11;
         for _ in 0..packets_count {
-            decode_packet(binary, idx, versions);
+            decode_packet_version(binary, idx, versions);
         }
     }
 }
