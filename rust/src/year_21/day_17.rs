@@ -28,8 +28,8 @@ impl TargetRange {
         self.x_rng.contains(&point.x) && self.y_rng.contains(&point.y)
     }
 
-    fn ckeck_missed_range(&self, point: &Point) -> bool {
-        point.x >= *self.x_rng.end() || point.y <= *self.y_rng.start()
+    fn check_missed_range(&self, point: &Point) -> bool {
+        point.x > *self.x_rng.end() || point.y < *self.y_rng.start()
     }
 }
 
@@ -79,7 +79,7 @@ impl Probe {
                 return Some(self.max_height);
             }
 
-            if target.ckeck_missed_range(&self.position) {
+            if target.check_missed_range(&self.position) {
                 return None;
             }
         }
@@ -96,6 +96,7 @@ fn find_highest_pos(input: &str) -> i32 {
     let target = TargetRange::from(input);
     let mut max_height = i32::MIN;
 
+    // 1000 is suitable value for my input range
     for x in 0..1000 {
         for y in 0..1000 {
             let mut probe = Probe::new(x, y);
@@ -108,6 +109,24 @@ fn find_highest_pos(input: &str) -> i32 {
     max_height
 }
 
+fn find_possible_hits_count(input: &str) -> i32 {
+    let target = TargetRange::from(input);
+
+    let mut count = 0;
+
+    // 2000 is suitable value for my input range
+    for x in 0..2000 {
+        for y in -200..2000 {
+            let mut probe = Probe::new(x, y);
+            if probe.simulate_run(&target).is_some() {
+                count += 1;
+            }
+        }
+    }
+
+    count
+}
+
 fn part_1() {
     let input = read_text_from_file("21", "17");
 
@@ -116,7 +135,13 @@ fn part_1() {
     println!("Part 1 answer is {answer}");
 }
 
-fn part_2() {}
+fn part_2() {
+    let input = read_text_from_file("21", "17");
+
+    let answer = find_possible_hits_count(input.trim());
+
+    println!("Part 2 answer is {answer}");
+}
 
 pub fn run() {
     part_1();
@@ -135,19 +160,19 @@ mod test {
 
         let p_inside = Point::new(20, -7);
         assert!(target.contains(&p_inside));
-        assert!(!target.ckeck_missed_range(&p_inside));
+        assert!(!target.check_missed_range(&p_inside));
 
         let p_miss_x = Point::new(31, -7);
         assert!(!target.contains(&p_miss_x));
-        assert!(target.ckeck_missed_range(&p_miss_x));
+        assert!(target.check_missed_range(&p_miss_x));
 
         let p_miss_y = Point::new(21, -11);
         assert!(!target.contains(&p_miss_y));
-        assert!(target.ckeck_missed_range(&p_miss_y));
+        assert!(target.check_missed_range(&p_miss_y));
 
         let p_not_inside_not_missed = Point::new(15, 10);
         assert!(!target.contains(&p_not_inside_not_missed));
-        assert!(!target.ckeck_missed_range(&p_not_inside_not_missed));
+        assert!(!target.check_missed_range(&p_not_inside_not_missed));
     }
 
     #[test]
@@ -170,6 +195,11 @@ mod test {
     #[test]
     fn test_part_1() {
         assert_eq!(find_highest_pos(INPUT), 45);
+    }
+
+    #[test]
+    fn test_part_2() {
+        assert_eq!(find_possible_hits_count(INPUT), 112);
     }
 }
 
