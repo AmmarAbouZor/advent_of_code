@@ -94,15 +94,24 @@ impl Point {
 
 fn find_highest_pos(input: &str) -> i32 {
     let target = TargetRange::from(input);
+    let mut max_height = i32::MIN;
 
-    dbg!(target);
+    for x in 0..1000 {
+        for y in 0..1000 {
+            let mut probe = Probe::new(x, y);
+            if let Some(height) = probe.simulate_run(&target) {
+                max_height = max_height.max(height)
+            }
+        }
+    }
 
-    todo!()
+    max_height
 }
 
 fn part_1() {
     let input = read_text_from_file("21", "17");
-    let answer = find_highest_pos(input.as_str());
+
+    let answer = find_highest_pos(input.trim());
 
     println!("Part 1 answer is {answer}");
 }
@@ -158,9 +167,9 @@ mod test {
         assert!(probe.simulate_run(&target).is_none());
     }
 
-    // #[test]
-    // fn test_part_1() {
-    //     assert_eq!(find_highest_pos(INPUT), 45);
-    // }
+    #[test]
+    fn test_part_1() {
+        assert_eq!(find_highest_pos(INPUT), 45);
+    }
 }
 
