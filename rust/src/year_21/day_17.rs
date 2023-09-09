@@ -1,4 +1,4 @@
-use std::ops::RangeInclusive;
+use std::{cmp::Ordering, ops::RangeInclusive};
 
 use crate::utls::read_text_from_file;
 
@@ -33,10 +33,57 @@ impl TargetRange {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 struct Point {
     x: i32,
     y: i32,
+}
+
+#[derive(Debug)]
+struct Probe {
+    position: Point,
+    velocity: Point,
+    max_height: i32,
+}
+
+impl Probe {
+    fn new(vel_x: i32, vel_y: i32) -> Self {
+        Self {
+            position: Point::default(),
+            velocity: Point::new(vel_x, vel_y),
+            max_height: i32::MIN,
+        }
+    }
+
+    fn apply_step(&mut self) {
+        self.position.x += self.velocity.x;
+        self.position.y += self.velocity.y;
+
+        self.velocity.x = match self.velocity.x.cmp(&0) {
+            Ordering::Less => self.velocity.x + 1,
+            Ordering::Equal => self.velocity.x,
+            Ordering::Greater => self.velocity.x - 1,
+        };
+
+        self.velocity.y -= 1;
+
+        self.max_height = self.max_height.max(self.position.y);
+    }
+
+    /// Simulate the run and return the maximum height if the probe hits in the target
+    fn simulate_run(&mut self, target: &TargetRange) -> Option<i32> {
+        loop {
+            self.apply_step();
+
+            if target.contains(&self.position) {
+                return Some(self.max_height);
+            }
+
+            if target.ckeck_missed_range(&self.position) {
+                return None;
+            }
+        }
+    }
 }
 
 impl Point {
@@ -92,6 +139,23 @@ mod test {
         let p_not_inside_not_missed = Point::new(15, 10);
         assert!(!target.contains(&p_not_inside_not_missed));
         assert!(!target.ckeck_missed_range(&p_not_inside_not_missed));
+    }
+
+    #[test]
+    fn test_probe_steps() {
+        let target = TargetRange::from(INPUT);
+
+        let mut probe = Probe::new(7, 2);
+        assert!(probe.simulate_run(&target).is_some());
+
+        let mut probe = Probe::new(6, 3);
+        assert!(probe.simulate_run(&target).is_some());
+
+        let mut probe = Probe::new(9, 0);
+        assert!(probe.simulate_run(&target).is_some());
+
+        let mut probe = Probe::new(17, -4);
+        assert!(probe.simulate_run(&target).is_none());
     }
 
     // #[test]
