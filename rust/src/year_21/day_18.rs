@@ -161,20 +161,43 @@ fn add_and_reduce(mut s_1: Vec<Symbol>, mut s_2: Vec<Symbol>) -> Vec<Symbol> {
     nums
 }
 
-fn calc_magnitude(input: &str) -> usize {
+fn calc_magnitude(nums: &[Symbol]) -> u32 {
+    let mut nums_stack: Vec<u32> = Vec::new();
+
+    for symbol in nums {
+        match symbol {
+            Symbol::OpenBracket | Symbol::Comma => {}
+            Symbol::CloseBracket => {
+                let right = nums_stack.pop().unwrap();
+                let left = nums_stack.pop().unwrap();
+                let val = 3 * left + 2 * right;
+                nums_stack.push(val);
+            }
+            Symbol::Num(num) => {
+                nums_stack.push(*num);
+            }
+        }
+    }
+
+    assert_eq!(nums_stack.len(), 1);
+
+    *nums_stack.first().unwrap()
+}
+
+fn sum_and_magnitude(input: &str) -> u32 {
     let mut calc_lines = input.lines().map(parse_line);
     let mut current_line = calc_lines.next().unwrap();
     for next_line in calc_lines {
         current_line = add_and_reduce(current_line, next_line);
-        println!("{}", symbols_to_string(&current_line));
     }
 
-    todo!()
+    println!("{}", symbols_to_string(&current_line));
+    calc_magnitude(&current_line)
 }
 
 fn part_1() {
     let input = read_text_from_file("21", "18");
-    let answer = calc_magnitude(input.as_str());
+    let answer = sum_and_magnitude(input.as_str());
 
     println!("Part 1 answer is {answer}");
 }
@@ -227,8 +250,28 @@ mod test {
     }
 
     #[test]
+    fn test_calc_magnitude() {
+        let input = [
+            ("[[1,2],[[3,4],5]]", 143),
+            ("[[[[0,7],4],[[7,8],[6,0]]],[8,1]]", 1384),
+            ("[[[[1,1],[2,2]],[3,3]],[4,4]]", 445),
+            ("[[[[3,0],[5,3]],[4,4]],[5,5]]", 791),
+            ("[[[[5,0],[7,4]],[5,5]],[6,6]]", 1137),
+            (
+                "[[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]",
+                3488,
+            ),
+        ];
+
+        for (line, result) in input {
+            let nums = parse_line(line);
+            assert_eq!(calc_magnitude(&nums), result);
+        }
+    }
+
+    #[test]
     fn test_part_1() {
-        assert_eq!(calc_magnitude(INPUT_1), 129);
-        // assert_eq!(calc_magnitude(INPUT_2), 4140);
+        assert_eq!(sum_and_magnitude(INPUT_1), 3488);
+        assert_eq!(sum_and_magnitude(INPUT_2), 4140);
     }
 }
