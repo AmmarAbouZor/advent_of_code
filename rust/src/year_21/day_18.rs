@@ -1,156 +1,160 @@
+use std::fmt::Display;
+
 use crate::utls::read_text_from_file;
 
-#[derive(Debug, Clone, Copy)]
-struct SnailNum {
-    value: u32,
-    depth: u32,
-    offset: usize,
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Symbol {
+    OpenBracket,
+    CloseBracket,
+    Comma,
+    Num(u32),
 }
 
-impl SnailNum {
-    fn new(value: u32, depth: u32, offset: usize) -> Self {
-        Self {
-            value,
-            depth,
-            offset,
+impl From<char> for Symbol {
+    fn from(char: char) -> Self {
+        use Symbol as S;
+        match char {
+            '[' => S::OpenBracket,
+            ']' => S::CloseBracket,
+            ',' => S::Comma,
+            num => S::Num(num.to_digit(10).unwrap()),
         }
     }
 }
 
-fn line_to_nums(line: &str) -> Vec<SnailNum> {
+impl Display for Symbol {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Symbol::OpenBracket => write!(f, "["),
+            Symbol::CloseBracket => write!(f, "]"),
+            Symbol::Comma => write!(f, ","),
+            Symbol::Num(num) => write!(f, "{}", num),
+        }
+    }
+}
+
+fn symbols_to_string(nums: &[Symbol]) -> String {
+    nums.iter().map(ToString::to_string).collect()
+}
+
+fn parse_line(line: &str) -> Vec<Symbol> {
+    line.chars().map(Symbol::from).collect()
+}
+
+#[inline]
+fn do_explode(nums: &mut Vec<Symbol>) -> bool {
+    use Symbol as S;
     let mut depth = 0;
-    let mut nums = Vec::new();
-    let mut offset = 0;
-    for ch in line.chars() {
-        match ch {
-            '[' => {
+    let expl_start_idx = nums.iter().position(|num| {
+        match num {
+            S::OpenBracket => {
                 depth += 1;
-                offset += 1;
             }
-            ']' => {
+            S::CloseBracket => {
                 depth -= 1;
-                offset += 1
             }
-            ',' => {}
-            ch => {
-                let num = ch.to_digit(10).unwrap();
-                nums.push(SnailNum::new(num, depth, offset));
-                offset = 0;
-            }
+            S::Comma => {}
+            S::Num(_) => {}
+        };
+        depth == 5
+    });
+
+    let expl_start_idx = match expl_start_idx {
+        Some(idx) => idx,
+        None => return false,
+    };
+
+    // [ left , right ]
+    let left_idx = expl_start_idx + 1;
+
+    let right_idx = left_idx + 2;
+
+    assert!(matches!(&nums[left_idx], S::Num(_)));
+    assert!(matches!(&nums[right_idx], S::Num(_)));
+
+    let S::Num(left_num) = nums[left_idx] else {
+        unreachable!()
+    };
+
+    let S::Num(right_num) = nums[right_idx] else {
+        unreachable!()
+    };
+
+    if let Some(S::Num(prev_left)) = nums[..expl_start_idx]
+        .iter_mut()
+        .rfind(|num| matches!(num, S::Num(_)))
+    {
+        *prev_left += left_num;
+    }
+
+    if let Some(S::Num(next_right)) = nums[right_idx + 1..]
+        .iter_mut()
+        .find(|num| matches!(num, S::Num(_)))
+    {
+        *next_right += right_num;
+    }
+
+    nums[expl_start_idx] = S::Num(0);
+
+    // Remove the range
+    nums.drain(expl_start_idx + 1..expl_start_idx + 5)
+        .for_each(|_| ());
+
+    true
+}
+
+#[inline]
+fn do_splite(nums: &mut Vec<Symbol>) -> bool {
+    use Symbol as S;
+    let Some(split_idx) = nums.iter().position(|n| {
+        if let S::Num(num) = n {
+            *num >= 10
+        } else {
+            false
         }
-    }
-    assert!(depth == 0);
+    }) else {
+        return false;
+    };
 
-    nums
+    let S::Num(num) = nums[split_idx] else {
+        unreachable!()
+    };
+
+    let left = num / 2;
+    let right = num - left;
+
+    nums.splice(
+        split_idx..split_idx + 1,
+        [
+            S::OpenBracket,
+            S::Num(left),
+            S::Comma,
+            S::Num(right),
+            S::CloseBracket,
+        ],
+    );
+
+    true
 }
 
 #[inline]
-fn get_explode_pos(nums: &Vec<SnailNum>) -> Option<(usize, usize)> {
-    assert!(nums.iter().all(|num| num.depth < 6));
-    if let Some((idx, _)) = nums.iter().enumerate().find(|(_, &num)| num.depth == 5) {
-        // Make sure the nesting is maximum 5 levels only
-        assert_eq!(nums[idx + 1].depth, 5);
-        // Make sure the return values are a pair
-        assert_eq!(nums[idx + 1].offset, 0);
-
-        Some((idx, idx + 1))
-    } else {
-        return None;
-    }
-}
-
-#[inline]
-fn get_split_pos(nums: &Vec<SnailNum>) -> Option<usize> {
-    nums.iter()
-        .enumerate()
-        .find(|(_, &num)| num.value > 9)
-        .map(|(idx, _)| idx)
-}
-
-#[inline]
-fn add_snails(mut s_1: Vec<SnailNum>, mut s_2: Vec<SnailNum>) -> Vec<SnailNum> {
-    let first_s1 = s_1.first_mut().unwrap();
-    first_s1.offset += 1;
-    let last_s1 = s_1.last().unwrap();
-    let first_s2 = s_2.first_mut().unwrap();
-    first_s2.offset += last_s1.depth as usize;
+fn add_and_reduce(mut s_1: Vec<Symbol>, mut s_2: Vec<Symbol>) -> Vec<Symbol> {
+    s_1.insert(0, Symbol::OpenBracket);
+    s_1.push(Symbol::Comma);
+    s_2.push(Symbol::CloseBracket);
 
     s_1.append(&mut s_2);
-
-    s_1.iter_mut().for_each(|num| num.depth += 1);
 
     let mut nums = s_1;
 
     let mut changed = true;
     while changed {
-        // dbg!(&nums);
+        // println!("{}", line_to_string(&nums));
         changed = false;
-        // ==== Explode ====
-        if let Some((idx_left, idx_right)) = get_explode_pos(&nums) {
-            // println!("Explode: left {idx_left}, right: {idx_right}");
+        if do_explode(&mut nums) {
             changed = true;
-            let mut idx_to_remove = Vec::new();
-            // Left side
-            if idx_left == 0 {
-                nums[idx_left].depth -= 1;
-                nums[idx_left].value = 0;
-                nums[idx_left].offset -= 1;
-            } else {
-                let current_val = nums[idx_left].value;
-                let current_offset = nums[idx_left].offset;
-                let prev_left = &mut nums[idx_left - 1];
-                if current_offset == 1 {
-                    prev_left.value += current_val;
-                    idx_to_remove.push(idx_left);
-                } else {
-                    prev_left.value += current_val;
-                    nums[idx_left].depth -= 1;
-                    nums[idx_left].value = 0;
-                    nums[idx_left].offset -= 1;
-                }
-            }
-
-            // Right side
-            if idx_right == nums.len() - 1 {
-                nums[idx_right].depth -= 1;
-                nums[idx_right].value = 0;
-            } else {
-                let current_value = nums[idx_right].value;
-                let next_right = &mut nums[idx_right + 1];
-                if next_right.offset == 1 {
-                    next_right.value += current_value;
-                    next_right.offset = 0;
-                    idx_to_remove.push(idx_right);
-                } else {
-                    next_right.value += current_value;
-                    next_right.offset -= 1;
-                    nums[idx_right].depth -= 1;
-                    nums[idx_right].value = 0;
-                }
-            }
-
-            // Remove items
-            // Start at the right values
-            for &idx in idx_to_remove.iter().rev() {
-                // println!("Remove {idx}");
-                nums.remove(idx);
-            }
-        }
-        // ==== Split ====
-        else if let Some(split_idx) = get_split_pos(&nums) {
-            // println!("Splite: {split_idx}");
+        } else if do_splite(&mut nums) {
             changed = true;
-            let num = nums[split_idx].value;
-            nums[split_idx].depth += 1;
-            nums[split_idx].value = num / 2;
-            nums[split_idx].offset += 1;
-
-            let new_num = SnailNum::new(num - nums[split_idx].value, nums[split_idx].depth, 0);
-            nums.insert(split_idx + 1, new_num);
-
-            if let Some(next_next) = nums.iter_mut().nth(split_idx + 2) {
-                next_next.offset += 1;
-            }
         }
     }
 
@@ -158,15 +162,12 @@ fn add_snails(mut s_1: Vec<SnailNum>, mut s_2: Vec<SnailNum>) -> Vec<SnailNum> {
 }
 
 fn calc_magnitude(input: &str) -> usize {
-    let mut snails = input.lines().map(line_to_nums);
-    let mut current_val = snails.next().unwrap();
-    for mut next_snail in snails {
-        current_val = add_snails(current_val, next_snail);
-        dbg!(&current_val);
-        panic!("enough");
+    let mut calc_lines = input.lines().map(parse_line);
+    let mut current_line = calc_lines.next().unwrap();
+    for next_line in calc_lines {
+        current_line = add_and_reduce(current_line, next_line);
+        println!("{}", symbols_to_string(&current_line));
     }
-
-    dbg!(current_val);
 
     todo!()
 }
@@ -214,78 +215,19 @@ mod test {
 [[2,[[7,7],7]],[[5,8],[[9,3],[0,2]]]]
 [[[[5,2],5],[8,[3,7]]],[[5,[7,5]],[4,4]]]";
 
-    // #[test]
-    // fn test_explode() {
-    //     let input = [
-    //         "[[[[[9,8],1],2],3],4]",
-    //         "[7,[6,[5,[4,[3,2]]]]]",
-    //         "[[6,[5,[4,[3,2]]]],1]",
-    //         "[[3,[2,[1,[7,3]]]],[6,[5,[4,[3,2]]]]]",
-    //         "[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]",
-    //     ];
-    //     for line in input {
-    //         println!("{line}");
-    //         let mut nums = line_to_nums(line);
-    //
-    //         let (idx_left, idx_right) = get_explode_pos(&nums).unwrap();
-    //         // println!("Explode: left {idx_left}, right: {idx_right}");
-    //         let mut idx_to_remove = Vec::new();
-    //         // Left side
-    //         if idx_left == 0 {
-    //             nums[idx_left].depth -= 1;
-    //             nums[idx_left].value = 0;
-    //             nums[idx_left].offset -= 1;
-    //         } else {
-    //             let current_val = nums[idx_left].value;
-    //             let current_offset = nums[idx_left].offset;
-    //             let prev_left = &mut nums[idx_left - 1];
-    //             if current_offset == 1 {
-    //                 prev_left.value += current_val;
-    //                 idx_to_remove.push(idx_left);
-    //             } else {
-    //                 prev_left.value += current_val;
-    //                 nums[idx_left].depth -= 1;
-    //                 nums[idx_left].value = 0;
-    //                 nums[idx_left].offset -= 1;
-    //             }
-    //         }
-    //
-    //         // Right side
-    //         if idx_right == nums.len() - 1 {
-    //             nums[idx_right].depth -= 1;
-    //             nums[idx_right].value = 0;
-    //         } else {
-    //             let current_value = nums[idx_right].value;
-    //             let next_right = &mut nums[idx_right + 1];
-    //             if next_right.offset == 1 {
-    //                 next_right.value += current_value;
-    //                 next_right.offset = 0;
-    //                 idx_to_remove.push(idx_right);
-    //             } else {
-    //                 next_right.value += current_value;
-    //                 next_right.offset -= 1;
-    //                 nums[idx_right].depth -= 1;
-    //                 nums[idx_right].value = 0;
-    //             }
-    //         }
-    //
-    //         // Remove items
-    //         // Start at the right values
-    //         for &idx in idx_to_remove.iter().rev() {
-    //             // println!("Remove {idx}");
-    //             nums.remove(idx);
-    //         }
-    //
-    //         dbg!(nums);
-    //         println!("==========================================================================");
-    //     }
-    //
-    //     assert!(false);
-    // }
+    #[test]
+    fn test_add_and_reduce() {
+        let mut nums = BASIC_INPUT.lines().map(parse_line);
+        let added_num = add_and_reduce(nums.next().unwrap(), nums.next().unwrap());
+
+        assert_eq!(
+            "[[[[0,7],4],[[7,8],[6,0]]],[8,1]]",
+            symbols_to_string(&added_num)
+        );
+    }
 
     #[test]
     fn test_part_1() {
-        // assert_eq!(calc_magnitude(BASIC_INPUT), 0);
         assert_eq!(calc_magnitude(INPUT_1), 129);
         // assert_eq!(calc_magnitude(INPUT_2), 4140);
     }
