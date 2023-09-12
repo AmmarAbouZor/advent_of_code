@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use itertools::Itertools;
+
 use crate::utls::read_text_from_file;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -195,6 +197,19 @@ fn sum_and_magnitude(input: &str) -> u32 {
     calc_magnitude(&current_line)
 }
 
+fn calc_max_sum(input: &str) -> u32 {
+    let calc_lines = input.lines().map(parse_line);
+
+    let mut max_sum = 0;
+
+    for pair in calc_lines.permutations(2) {
+        let add_1 = add_and_reduce(pair[0].clone(), pair[1].clone());
+        max_sum = max_sum.max(calc_magnitude(&add_1));
+    }
+
+    max_sum
+}
+
 fn part_1() {
     let input = read_text_from_file("21", "18");
     let answer = sum_and_magnitude(input.as_str());
@@ -202,7 +217,12 @@ fn part_1() {
     println!("Part 1 answer is {answer}");
 }
 
-fn part_2() {}
+fn part_2() {
+    let input = read_text_from_file("21", "18");
+    let answer = calc_max_sum(input.as_str());
+
+    println!("Part 2 answer is {answer}");
+}
 
 pub fn run() {
     part_1();
@@ -273,5 +293,10 @@ mod test {
     fn test_part_1() {
         assert_eq!(sum_and_magnitude(INPUT_1), 3488);
         assert_eq!(sum_and_magnitude(INPUT_2), 4140);
+    }
+
+    #[test]
+    fn test_part_2() {
+        assert_eq!(calc_max_sum(INPUT_2), 3993);
     }
 }
