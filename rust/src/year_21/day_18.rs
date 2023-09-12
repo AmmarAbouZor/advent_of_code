@@ -151,13 +151,7 @@ fn add_and_reduce(mut s_1: Vec<Symbol>, mut s_2: Vec<Symbol>) -> Vec<Symbol> {
 
     let mut changed = true;
     while changed {
-        // println!("{}", line_to_string(&nums));
-        changed = false;
-        if do_explode(&mut nums) {
-            changed = true;
-        } else if do_splite(&mut nums) {
-            changed = true;
-        }
+        changed = do_explode(&mut nums) || do_splite(&mut nums);
     }
 
     nums
