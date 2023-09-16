@@ -28,6 +28,7 @@ impl From<&str> for Point {
 
 #[derive(Debug, Clone)]
 struct Scanner {
+    position: Point,
     beacons: Vec<Point>,
     rotate_count: u8,
 }
@@ -37,6 +38,7 @@ impl From<&str> for Scanner {
         let beacons = value.lines().skip(1).map(Point::from).collect();
 
         Scanner {
+            position: Point::new(0, 0, 0),
             beacons,
             rotate_count: 0,
         }
@@ -83,8 +85,31 @@ impl Scanner {
                 self.rotate_count += 1;
                 return true;
             }
-            _ => false,
+            4 => {
+                for point in self.beacons.iter_mut() {
+                    swap(&mut point.x, &mut point.z);
+                    swap(&mut point.y, &mut point.z);
+                    point.x *= -1;
+                    point.y *= -1;
+                }
+                self.rotate_count = 0;
+                return false;
+            }
+            _ => unreachable!(),
         }
+    }
+
+    fn get_beacons_absolute(&self) -> HashSet<Point> {
+        self.beacons
+            .iter()
+            .cloned()
+            .map(|mut p| {
+                p.x -= self.position.x;
+                p.y -= self.position.y;
+                p.z -= self.position.z;
+                p
+            })
+            .collect()
     }
 }
 
@@ -97,21 +122,35 @@ fn calc_beacons_count(input: &str) -> usize {
     let first_scanner = scanners.next().unwrap();
     let mut intersect_set: HashSet<_> = HashSet::from_iter(first_scanner.beacons.into_iter());
     for mut scanner in scanners {
-        loop {
-            let intersect_len = scanner
-                .beacons
-                .iter()
-                .filter(|b| intersect_set.contains(b))
-                .count();
-            if intersect_len < 12 {
-                assert!(scanner.rotate());
-            } else {
-                for beacon in scanner.beacons {
-                    intersect_set.insert(beacon);
+        let mut found = false;
+        'outer: for bound in 0..1000 {
+            for x in -bound..bound {
+                for y in -bound..bound {
+                    for z in -bound..bound {
+                        scanner.position = Point::new(x, y, z);
+
+                        let mut check = true;
+                        while check {
+                            let beac_abs = scanner.get_beacons_absolute();
+                            let intersect_len = intersect_set
+                                .intersection(&beac_abs)
+                                .collect::<Vec<_>>()
+                                .len();
+                            if intersect_len < 12 {
+                                check = scanner.rotate();
+                            } else {
+                                for beac in beac_abs {
+                                    intersect_set.insert(beac);
+                                    found = true;
+                                    break 'outer;
+                                }
+                            }
+                        }
+                    }
                 }
-                break;
             }
         }
+        assert!(found)
     }
 
     intersect_set.len()
@@ -283,10 +322,17 @@ mod test {
 5,6,-4
 8,0,7";
         let mut scanner = Scanner::from(SCANNER);
-        while scanner.rotate() {}
+        for _ in 0..4 {
+            assert!(scanner.rotate());
+        }
         assert_eq!(scanner.rotate_count, 4);
         assert_eq!(scanner.beacons.last().unwrap(), &Point::new(0, 7, -8));
         assert_eq!(scanner.beacons[4], Point::new(-6, -4, -5));
+
+        assert!(!scanner.rotate());
+        assert_eq!(scanner.rotate_count, 0);
+        assert_eq!(scanner.beacons.last().unwrap(), &Point::new(8, 0, 7));
+        assert_eq!(scanner.beacons[4], Point::new(5, 6, -4));
     }
 
     #[test]
