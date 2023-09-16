@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::collections::HashSet;
 
 use crate::utls::read_text_from_file;
@@ -8,6 +7,12 @@ struct Point {
     x: i32,
     y: i32,
     z: i32,
+}
+
+impl Point {
+    fn new(x: i32, y: i32, z: i32) -> Self {
+        Self { x, y, z }
+    }
 }
 
 impl From<&str> for Point {
@@ -23,25 +28,93 @@ impl From<&str> for Point {
 
 #[derive(Debug, Clone)]
 struct Scanner {
-    beacons: HashSet<Point>,
+    beacons: Vec<Point>,
+    rotate_count: u8,
 }
 
 impl From<&str> for Scanner {
     fn from(value: &str) -> Self {
         let beacons = value.lines().skip(1).map(Point::from).collect();
 
-        Scanner { beacons }
+        Scanner {
+            beacons,
+            rotate_count: 0,
+        }
     }
 }
 
-fn parse_input(input: &str) -> Vec<Scanner> {
-    input.split("\n\n").map(Scanner::from).collect()
+impl Scanner {
+    fn rotate(&mut self) -> bool {
+        use std::mem::swap;
+        match self.rotate_count {
+            0 => {
+                for point in self.beacons.iter_mut() {
+                    point.x *= -1;
+                    swap(&mut point.y, &mut point.z);
+                    point.y *= -1;
+                    point.z *= -1;
+                }
+                self.rotate_count += 1;
+                return true;
+            }
+            1 => {
+                for point in self.beacons.iter_mut() {
+                    swap(&mut point.x, &mut point.y);
+                    swap(&mut point.y, &mut point.z);
+                    point.y *= -1;
+                    point.z *= -1;
+                }
+                self.rotate_count += 1;
+                return true;
+            }
+            2 => {
+                for point in self.beacons.iter_mut() {
+                    point.x *= -1;
+                    point.y *= -1;
+                }
+                self.rotate_count += 1;
+                return true;
+            }
+            3 => {
+                for point in self.beacons.iter_mut() {
+                    swap(&mut point.x, &mut point.y);
+                    point.z *= -1;
+                }
+                self.rotate_count += 1;
+                return true;
+            }
+            _ => false,
+        }
+    }
+}
+
+fn parse_input(input: &str) -> impl Iterator<Item = Scanner> + '_ {
+    input.split("\n\n").map(Scanner::from)
 }
 
 fn calc_beacons_count(input: &str) -> usize {
-    let beacons = parse_input(input);
-    dbg!(beacons);
-    todo!()
+    let mut scanners = parse_input(input);
+    let first_scanner = scanners.next().unwrap();
+    let mut intersect_set: HashSet<_> = HashSet::from_iter(first_scanner.beacons.into_iter());
+    for mut scanner in scanners {
+        loop {
+            let intersect_len = scanner
+                .beacons
+                .iter()
+                .filter(|b| intersect_set.contains(b))
+                .count();
+            if intersect_len < 12 {
+                assert!(scanner.rotate());
+            } else {
+                for beacon in scanner.beacons {
+                    intersect_set.insert(beacon);
+                }
+                break;
+            }
+        }
+    }
+
+    intersect_set.len()
 }
 
 fn part_1() {
@@ -201,8 +274,23 @@ mod test {
 ";
 
     #[test]
+    fn test_rotate() {
+        const SCANNER: &str = r"--- scanner 0 ---
+-1,-1,1
+-2,-2,2
+-3,-3,3
+-2,-3,1
+5,6,-4
+8,0,7";
+        let mut scanner = Scanner::from(SCANNER);
+        while scanner.rotate() {}
+        assert_eq!(scanner.rotate_count, 4);
+        assert_eq!(scanner.beacons.last().unwrap(), &Point::new(0, 7, -8));
+        assert_eq!(scanner.beacons[4], Point::new(-6, -4, -5));
+    }
+
+    #[test]
     fn test_part_1() {
         assert_eq!(calc_beacons_count(INPUT), 79);
     }
 }
-
