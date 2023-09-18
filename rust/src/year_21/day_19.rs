@@ -1,4 +1,9 @@
-use std::collections::HashSet;
+use std::{
+    collections::HashSet,
+    ops::{Add, Sub},
+};
+
+use itertools::Itertools;
 
 use crate::utls::read_text_from_file;
 
@@ -13,6 +18,38 @@ impl Point {
     fn new(x: i32, y: i32, z: i32) -> Self {
         Self { x, y, z }
     }
+
+    fn rotate(&self, rot: u8) -> Point {
+        use Point as P;
+        let Point { x, y, z } = *self;
+        match rot {
+            0 => P::new(x, y, z),
+            1 => P::new(x, z, -y),
+            2 => P::new(x, -y, -z),
+            3 => P::new(x, -z, y),
+            4 => P::new(y, x, -z),
+            5 => P::new(y, z, x),
+            6 => P::new(y, -x, z),
+            7 => P::new(y, -z, -x),
+            8 => P::new(z, x, y),
+            9 => P::new(z, y, -x),
+            10 => P::new(z, -x, -y),
+            11 => P::new(z, -y, x),
+            12 => P::new(-x, y, -z),
+            13 => P::new(-x, z, y),
+            14 => P::new(-x, -y, z),
+            15 => P::new(-x, -z, -y),
+            16 => P::new(-y, x, z),
+            17 => P::new(-y, z, -x),
+            18 => P::new(-y, -x, -z),
+            19 => P::new(-y, -z, x),
+            20 => P::new(-z, x, -y),
+            21 => P::new(-z, y, x),
+            22 => P::new(-z, -x, y),
+            23 => P::new(-z, -y, -x),
+            _ => unreachable!(),
+        }
+    }
 }
 
 impl From<&str> for Point {
@@ -26,134 +63,87 @@ impl From<&str> for Point {
     }
 }
 
+impl Sub for Point {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Point {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+            z: self.z - rhs.z,
+        }
+    }
+}
+
+impl Add for Point {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Point {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 struct Scanner {
-    position: Point,
     beacons: Vec<Point>,
-    rotate_count: u8,
+}
+
+impl Scanner {
+    fn merge(&self, total_beacons: &mut HashSet<Point>) -> bool {
+        for rot in 0..24 {
+            let rotate_beacons: Vec<Point> = self.beacons.iter().map(|p| p.rotate(rot)).collect();
+            let deltas: Vec<_> = total_beacons
+                .iter()
+                .cartesian_product(&rotate_beacons)
+                .map(|(p1, p2)| *p1 - *p2)
+                .collect();
+
+            for delta_point in deltas {
+                let translated = rotate_beacons.iter().map(|p| *p + delta_point);
+                if translated
+                    .clone()
+                    .filter(|p| total_beacons.contains(p))
+                    .count()
+                    >= 12
+                {
+                    total_beacons.extend(translated);
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
 }
 
 impl From<&str> for Scanner {
     fn from(value: &str) -> Self {
         let beacons = value.lines().skip(1).map(Point::from).collect();
 
-        Scanner {
-            position: Point::new(0, 0, 0),
-            beacons,
-            rotate_count: 0,
-        }
+        Scanner { beacons }
     }
 }
 
-impl Scanner {
-    fn rotate(&mut self) -> bool {
-        use std::mem::swap;
-        match self.rotate_count {
-            0 => {
-                for point in self.beacons.iter_mut() {
-                    point.x *= -1;
-                    swap(&mut point.y, &mut point.z);
-                    point.y *= -1;
-                    point.z *= -1;
-                }
-                self.rotate_count += 1;
-                return true;
-            }
-            1 => {
-                for point in self.beacons.iter_mut() {
-                    swap(&mut point.x, &mut point.y);
-                    swap(&mut point.y, &mut point.z);
-                    point.y *= -1;
-                    point.z *= -1;
-                }
-                self.rotate_count += 1;
-                return true;
-            }
-            2 => {
-                for point in self.beacons.iter_mut() {
-                    point.x *= -1;
-                    point.y *= -1;
-                }
-                self.rotate_count += 1;
-                return true;
-            }
-            3 => {
-                for point in self.beacons.iter_mut() {
-                    swap(&mut point.x, &mut point.y);
-                    point.z *= -1;
-                }
-                self.rotate_count += 1;
-                return true;
-            }
-            4 => {
-                for point in self.beacons.iter_mut() {
-                    swap(&mut point.x, &mut point.z);
-                    swap(&mut point.y, &mut point.z);
-                    point.x *= -1;
-                    point.y *= -1;
-                }
-                self.rotate_count = 0;
-                return false;
-            }
-            _ => unreachable!(),
-        }
-    }
-
-    fn get_beacons_absolute(&self) -> HashSet<Point> {
-        self.beacons
-            .iter()
-            .cloned()
-            .map(|mut p| {
-                p.x -= self.position.x;
-                p.y -= self.position.y;
-                p.z -= self.position.z;
-                p
-            })
-            .collect()
-    }
-}
-
-fn parse_input(input: &str) -> impl Iterator<Item = Scanner> + '_ {
-    input.split("\n\n").map(Scanner::from)
+fn parse_input(input: &str) -> Vec<Scanner> {
+    input.split("\n\n").map(Scanner::from).collect()
 }
 
 fn calc_beacons_count(input: &str) -> usize {
     let mut scanners = parse_input(input);
-    let first_scanner = scanners.next().unwrap();
-    let mut intersect_set: HashSet<_> = HashSet::from_iter(first_scanner.beacons.into_iter());
-    for mut scanner in scanners {
-        let mut found = false;
-        'outer: for bound in 0..1000 {
-            for x in -bound..bound {
-                for y in -bound..bound {
-                    for z in -bound..bound {
-                        scanner.position = Point::new(x, y, z);
-
-                        let mut check = true;
-                        while check {
-                            let beac_abs = scanner.get_beacons_absolute();
-                            let intersect_len = intersect_set
-                                .intersection(&beac_abs)
-                                .collect::<Vec<_>>()
-                                .len();
-                            if intersect_len < 12 {
-                                check = scanner.rotate();
-                            } else {
-                                for beac in beac_abs {
-                                    intersect_set.insert(beac);
-                                    found = true;
-                                    break 'outer;
-                                }
-                            }
-                        }
-                    }
-                }
+    let mut total_beacons: HashSet<_> = scanners.remove(0).beacons.into_iter().collect();
+    while !scanners.is_empty() {
+        for i in (0..scanners.len()).rev() {
+            if scanners[i].merge(&mut total_beacons) {
+                scanners.swap_remove(i);
             }
         }
-        assert!(found)
     }
 
-    intersect_set.len()
+    total_beacons.len()
 }
 
 fn part_1() {
@@ -311,29 +301,6 @@ mod test {
 -652,-548,-490
 30,-46,-14
 ";
-
-    #[test]
-    fn test_rotate() {
-        const SCANNER: &str = r"--- scanner 0 ---
--1,-1,1
--2,-2,2
--3,-3,3
--2,-3,1
-5,6,-4
-8,0,7";
-        let mut scanner = Scanner::from(SCANNER);
-        for _ in 0..4 {
-            assert!(scanner.rotate());
-        }
-        assert_eq!(scanner.rotate_count, 4);
-        assert_eq!(scanner.beacons.last().unwrap(), &Point::new(0, 7, -8));
-        assert_eq!(scanner.beacons[4], Point::new(-6, -4, -5));
-
-        assert!(!scanner.rotate());
-        assert_eq!(scanner.rotate_count, 0);
-        assert_eq!(scanner.beacons.last().unwrap(), &Point::new(8, 0, 7));
-        assert_eq!(scanner.beacons[4], Point::new(5, 6, -4));
-    }
 
     #[test]
     fn test_part_1() {
