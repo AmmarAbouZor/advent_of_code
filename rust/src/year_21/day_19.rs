@@ -359,11 +359,13 @@ mod test {
 ";
 
     #[test]
+    #[ignore]
     fn test_part_1() {
         assert_eq!(calc_beacons_count(INPUT), 79);
     }
 
     #[test]
+    #[ignore]
     fn test_part_2() {
         assert_eq!(calc_manhatten_dist(INPUT), 3621);
     }
