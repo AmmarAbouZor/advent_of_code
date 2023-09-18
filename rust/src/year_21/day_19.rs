@@ -50,6 +50,10 @@ impl Point {
             _ => unreachable!(),
         }
     }
+
+    fn get_manhatten_dist(&self, rhs: &Point) -> i32 {
+        (self.x - rhs.x).abs() + (self.y - rhs.y).abs() + (self.z - rhs.z).abs()
+    }
 }
 
 impl From<&str> for Point {
@@ -118,6 +122,32 @@ impl Scanner {
 
         false
     }
+
+    fn merge_with_dis(&self, total_beacons: &mut HashSet<Point>) -> Option<Point> {
+        for rot in 0..24 {
+            let rotate_beacons: Vec<Point> = self.beacons.iter().map(|p| p.rotate(rot)).collect();
+            let deltas: Vec<_> = total_beacons
+                .iter()
+                .cartesian_product(&rotate_beacons)
+                .map(|(p1, p2)| *p1 - *p2)
+                .collect();
+
+            for delta_point in deltas {
+                let translated = rotate_beacons.iter().map(|p| *p + delta_point);
+                if translated
+                    .clone()
+                    .filter(|p| total_beacons.contains(p))
+                    .count()
+                    >= 12
+                {
+                    total_beacons.extend(translated);
+                    return Some(delta_point);
+                }
+            }
+        }
+
+        None
+    }
 }
 
 impl From<&str> for Scanner {
@@ -146,6 +176,27 @@ fn calc_beacons_count(input: &str) -> usize {
     total_beacons.len()
 }
 
+fn calc_manhatten_dist(input: &str) -> i32 {
+    let mut scanners = parse_input(input);
+    let mut total_beacons: HashSet<_> = scanners.remove(0).beacons.into_iter().collect();
+    let mut dists = Vec::new();
+    while !scanners.is_empty() {
+        for i in (0..scanners.len()).rev() {
+            if let Some(delta_p) = scanners[i].merge_with_dis(&mut total_beacons) {
+                scanners.swap_remove(i);
+                dists.push(delta_p);
+            }
+        }
+    }
+
+    dists
+        .iter()
+        .tuple_combinations()
+        .map(|(p1, p2)| p1.get_manhatten_dist(p2))
+        .max()
+        .unwrap()
+}
+
 fn part_1() {
     let input = read_text_from_file("21", "19");
     let answer = calc_beacons_count(&input);
@@ -153,7 +204,12 @@ fn part_1() {
     println!("Part 1 answer is {answer}");
 }
 
-fn part_2() {}
+fn part_2() {
+    let input = read_text_from_file("21", "19");
+    let answer = calc_manhatten_dist(&input);
+
+    println!("Part 2 answer is {answer}");
+}
 
 pub fn run() {
     part_1();
@@ -305,5 +361,10 @@ mod test {
     #[test]
     fn test_part_1() {
         assert_eq!(calc_beacons_count(INPUT), 79);
+    }
+
+    #[test]
+    fn test_part_2() {
+        assert_eq!(calc_manhatten_dist(INPUT), 3621);
     }
 }
