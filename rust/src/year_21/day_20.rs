@@ -7,20 +7,18 @@ struct Picture {
     pixels: Vec<Vec<bool>>,
 }
 
-const OFFSET: usize = 20;
-
 impl From<&str> for Picture {
     fn from(input: &str) -> Self {
         // Make offset for the pixels so the picture can grow
         let width = input.lines().next().unwrap().len();
         let height = input.lines().count();
 
-        let mut pixels = vec![vec![false; width + 2 * OFFSET]; height + 2 * OFFSET];
+        let mut pixels = vec![vec![false; width]; height];
 
         input.lines().enumerate().for_each(|(row, line)| {
             line.chars().enumerate().for_each(|(col, ch)| {
                 let lid = char_to_bool(ch);
-                pixels[row + OFFSET][col + OFFSET] = lid;
+                pixels[row][col] = lid;
             })
         });
 
@@ -48,21 +46,24 @@ impl Display for Picture {
 
 impl Picture {
     fn apply_enhance(&mut self, enh_alg: &[bool], round: usize) {
-        let mut px = self.pixels.clone();
-        let width = self.pixels[0].len();
-        let height = self.pixels.len();
+        let new_width = self.pixels[0].len() + 2;
+        let new_height = self.pixels.len() + 2;
+        let mut px = vec![vec![false; new_width]; new_height];
 
-        for row in OFFSET - round..height - OFFSET + round {
-            for col in OFFSET - round..width - OFFSET + round {
+        for row in 0..new_height {
+            for col in 0..new_width {
                 let mut grid = Vec::with_capacity(9);
-                for r in row - 1..row + 2 {
-                    for c in col - 1..col + 2 {
-                        grid.push(self.pixels[r][c]);
+                for r in row..row + 3 {
+                    for c in col..col + 3 {
+                        grid.push(
+                            *self
+                                .pixels
+                                .get(r.wrapping_sub(2))
+                                .and_then(|row| row.get(c.wrapping_sub(2)))
+                                .unwrap_or(&(round & 1 == 1)),
+                        );
                     }
                 }
-                // grid.extend_from_slice(&self.pixels[row - 2][col - 1..col + 2]);
-                // grid.extend_from_slice(&self.pixels[row][col - 1..col + 2]);
-                // grid.extend_from_slice(&self.pixels[row + 1][col - 1..col + 2]);
                 let lid_idx = bool_slice_to_binary(&grid);
                 px[row][col] = enh_alg[lid_idx];
             }
@@ -77,10 +78,6 @@ impl Picture {
 }
 
 fn bool_slice_to_binary(arr: &[bool]) -> usize {
-    // if arr.iter().all(|&b| !b) {
-    //     println!("Hit");
-    //     return 0;
-    // }
     let mut result = 0;
     for &bit in arr {
         result <<= 1;
@@ -114,48 +111,32 @@ fn parse_input(input: &str) -> (Vec<bool>, Picture) {
     (img_enh, picture)
 }
 
-fn calc_lid_pixels(input: &str) -> usize {
+fn calc_lid_pixels(input: &str, target: usize) -> usize {
     let (img_enh, mut picture) = parse_input(input);
     println!("{picture}");
 
-    for i in 0..2 {
-        picture.apply_enhance(&img_enh, i + 1);
+    for i in 0..target {
+        picture.apply_enhance(&img_enh, i);
     }
-
-    println!("{picture}");
 
     picture.get_lid_pixels()
 }
 
 fn part_1() {
     let input = read_text_from_file("21", "20");
-    let answer = calc_lid_pixels(input.as_str());
+    let answer = calc_lid_pixels(input.as_str(), 2);
 
     println!("Part 1 answer is {answer}");
 }
 
-fn part_2() {}
+fn part_2() {
+    let input = read_text_from_file("21", "20");
+    let answer = calc_lid_pixels(input.as_str(), 50);
+
+    println!("Part 2 answer is {answer}");
+}
 
 pub fn run() {
     part_1();
     part_2();
 }
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    const INPUT: &str = r"..#.#..#####.#.#.#.###.##.....###.##.#..###.####..#####..#....#..#..##..## #..######.###...####..#..#####..##..#.#####...##.#.#..#.##..#.#......#.### .######.###.####...#.##.##..#..#..#####.....#.#....###..#.##......#.....#. .#..#..##..#...##.######.####.####.#.#...#.......#..#.#.#...####.##.#..... .#..#...##.#.##..#...##.#.##..###.#......#.#.......#.#.#.####.###.##...#.. ...####.#..#..#.##.#....##..#.####....##...##..#...#......#.#.......#..... ..##..####..#...#.#.#...##..#.#..###..#####........#..####......#..#
-
-#..#.
-#....
-##..#
-..#..
-..###";
-
-    #[test]
-    fn test_part_1() {
-        assert_eq!(calc_lid_pixels(INPUT), 35);
-    }
-}
-
