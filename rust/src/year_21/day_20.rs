@@ -50,11 +50,11 @@ impl Picture {
         let new_height = self.pixels.len() + 2;
         let mut px = vec![vec![false; new_width]; new_height];
 
-        for row in 0..new_height {
-            for col in 0..new_width {
+        for (row_idx, row) in px.iter_mut().enumerate() {
+            for (col_idx, val) in row.iter_mut().enumerate() {
                 let mut grid = Vec::with_capacity(9);
-                for r in row..row + 3 {
-                    for c in col..col + 3 {
+                for r in row_idx..row_idx + 3 {
+                    for c in col_idx..col_idx + 3 {
                         grid.push(
                             *self
                                 .pixels
@@ -65,7 +65,7 @@ impl Picture {
                     }
                 }
                 let lid_idx = bool_slice_to_binary(&grid);
-                px[row][col] = enh_alg[lid_idx];
+                *val = enh_alg[lid_idx];
             }
         }
 
