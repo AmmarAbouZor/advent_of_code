@@ -40,13 +40,14 @@ impl DetermDice {
     fn next_three(&mut self) -> [usize; 3] {
         self.counter += 3;
 
-        let mut result = [3; 3];
-        for i in 0..3 {
+        let mut result = [0; 3];
+        for dice in result.iter_mut() {
             self.current_side += 1;
             if self.current_side > 100 {
                 self.current_side -= 100;
             }
-            result[i] = self.current_side;
+
+            *dice = self.current_side;
         }
 
         result
