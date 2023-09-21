@@ -10,9 +10,9 @@ struct Player {
 
 impl From<&str> for Player {
     fn from(value: &str) -> Self {
-        let parts = value.split_whitespace();
+        let (_, pos) = value.split_once(": ").unwrap();
 
-        let position = parts.last().and_then(|pos| pos.parse().ok()).unwrap();
+        let position = pos.parse().unwrap();
 
         Player { score: 0, position }
     }
@@ -61,24 +61,30 @@ struct Universe {
     score_2: usize,
 }
 
-impl Universe {
-    fn new(pos_1: usize, pos_2: usize, score_1: usize, score_2: usize) -> Self {
-        Self {
+impl From<&str> for Universe {
+    fn from(input: &str) -> Self {
+        let mut positions = input.lines().map(|line| {
+            let (_, pos) = line.split_once(": ").unwrap();
+            pos.parse().unwrap()
+        });
+
+        let pos_1 = positions.next().unwrap();
+        let pos_2 = positions.next().unwrap();
+        let score_1 = 0;
+        let score_2 = 0;
+
+        Universe {
             pos_1,
             pos_2,
             score_1,
             score_2,
         }
     }
+}
 
-    // TODO: Parse directly from the input
-    fn from_players(players: [Player; 2]) -> Self {
-        let pos_1 = players[0].position;
-        let pos_2 = players[1].position;
-        let score_1 = players[0].score;
-        let score_2 = players[1].score;
-
-        Universe {
+impl Universe {
+    fn new(pos_1: usize, pos_2: usize, score_1: usize, score_2: usize) -> Self {
+        Self {
             pos_1,
             pos_2,
             score_1,
@@ -122,8 +128,7 @@ fn calc_loser_score(input: &str) -> usize {
 }
 
 fn calc_universes(input: &str) -> usize {
-    let players = parse_input(input);
-    let init_universe = Universe::from_players(players);
+    let init_universe = Universe::from(input);
     let mut cache = HashMap::new();
 
     let final_score = calc_uni_rec(init_universe, &mut cache);
