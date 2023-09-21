@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::utls::read_text_from_file;
 
 #[derive(Debug, Clone, Copy)]
@@ -26,19 +28,6 @@ impl Player {
 
         self.score >= 1000
     }
-
-    fn move_position(&mut self, dice: usize) {
-        self.position += dice;
-        while self.position > 10 {
-            self.position -= 10;
-        }
-    }
-
-    fn add_score(&mut self) -> bool {
-        self.score += self.position;
-
-        self.score >= 21
-    }
 }
 
 #[derive(Debug, Default)]
@@ -64,18 +53,49 @@ impl DetermDice {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 struct Universe {
-    players: [Player; 2],
-    turn_stack: Vec<usize>,
+    pos_1: usize,
+    pos_2: usize,
+    score_1: usize,
+    score_2: usize,
 }
 
 impl Universe {
-    fn new(players: [Player; 2], turn_stack: Vec<usize>) -> Self {
+    fn new(pos_1: usize, pos_2: usize, score_1: usize, score_2: usize) -> Self {
         Self {
-            players,
-            turn_stack,
+            pos_1,
+            pos_2,
+            score_1,
+            score_2,
         }
+    }
+
+    // TODO: Parse directly from the input
+    fn from_players(players: [Player; 2]) -> Self {
+        let pos_1 = players[0].position;
+        let pos_2 = players[1].position;
+        let score_1 = players[0].score;
+        let score_2 = players[1].score;
+
+        Universe {
+            pos_1,
+            pos_2,
+            score_1,
+            score_2,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+struct Score {
+    p1: usize,
+    p2: usize,
+}
+
+impl Score {
+    fn new(p1: usize, p2: usize) -> Self {
+        Self { p1, p2 }
     }
 }
 
@@ -102,33 +122,48 @@ fn calc_loser_score(input: &str) -> usize {
 }
 
 fn calc_universes(input: &str) -> usize {
-    let mut scores_map = [0; 2];
-
     let players = parse_input(input);
+    let init_universe = Universe::from_players(players);
+    let mut cache = HashMap::new();
 
-    let universe = Universe::new(players, vec![0; 3]);
+    let final_score = calc_uni_rec(init_universe, &mut cache);
 
-    let mut uni_stack = vec![universe];
+    final_score.p1.max(final_score.p2)
+}
 
-    while let Some(mut universe) = uni_stack.pop() {
-        let turn_idx = universe.turn_stack.pop().unwrap();
-        let end_turn = universe.turn_stack.is_empty();
-        if end_turn {
-            let next_idx = (turn_idx + 1) % 2;
-            universe.turn_stack.extend([next_idx; 3].into_iter());
-        }
-        for dice in 1..4 {
-            universe.players[turn_idx].move_position(dice);
-            if end_turn && universe.players[turn_idx].add_score() {
-                scores_map[turn_idx] += 1;
-                println!("{:?}", scores_map);
-            } else {
-                uni_stack.push(universe.clone());
+fn calc_uni_rec(universe: Universe, cache: &mut HashMap<Universe, Score>) -> Score {
+    if universe.score_1 >= 21 {
+        return Score::new(1, 0);
+    }
+    if universe.score_2 >= 21 {
+        return Score::new(0, 1);
+    }
+
+    if let Some(score) = cache.get(&universe) {
+        return *score;
+    }
+
+    let mut score = Score::default();
+
+    for die_1 in 1..4 {
+        for die_2 in 1..4 {
+            for die_3 in 1..4 {
+                let mut pos_1 = universe.pos_1 + die_1 + die_2 + die_3;
+                while pos_1 > 10 {
+                    pos_1 -= 10;
+                }
+                let score_1 = universe.score_1 + pos_1;
+                // Swap players and scores since it's next player turn
+                let new_universe = Universe::new(universe.pos_2, pos_1, universe.score_2, score_1);
+                let rec_score = calc_uni_rec(new_universe, cache);
+                score.p1 += rec_score.p2;
+                score.p2 += rec_score.p1;
             }
         }
     }
 
-    scores_map.into_iter().max().unwrap()
+    assert!(cache.insert(universe, score).is_none());
+    score
 }
 
 fn part_1() {
@@ -163,4 +198,3 @@ Player 2 starting position: 8";
         assert_eq!(calc_universes(INPUT), 444356092776315);
     }
 }
-
