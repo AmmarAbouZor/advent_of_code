@@ -1,10 +1,15 @@
-use std::{collections::HashSet, ops::RangeInclusive};
+use std::{
+    cmp::{max, min},
+    collections::HashSet,
+    isize,
+    ops::RangeInclusive,
+};
 
 use crate::utls::read_text_from_file;
 
 type Cubes = HashSet<(i32, i32, i32)>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Step {
     on: bool,
     x: RangeInclusive<i32>,
@@ -32,6 +37,16 @@ impl From<&str> for Step {
 }
 
 impl Step {
+    fn new(
+        on: bool,
+        x: RangeInclusive<i32>,
+        y: RangeInclusive<i32>,
+        z: RangeInclusive<i32>,
+    ) -> Self {
+        Self { on, x, y, z }
+    }
+
+    // Used for the naive solution
     fn apply_limit(&self, lid_set: &mut Cubes, limit: &RangeInclusive<i32>) {
         if self.on {
             let action = |x, y, z, set: &mut Cubes| {
@@ -48,6 +63,7 @@ impl Step {
         };
     }
 
+    // Used for the naive solution
     fn apply_intern_limit<A: FnMut(i32, i32, i32, &mut Cubes)>(
         &self,
         lid_set: &mut Cubes,
@@ -63,37 +79,39 @@ impl Step {
         }
     }
 
-    fn apply(&self, lid_set: &mut Cubes) {
-        if self.on {
-            let action = |x, y, z, set: &mut Cubes| {
-                set.insert((x, y, z));
-            };
+    // The efficient solution
+    fn combine_sub(&self, other: &Step) -> Option<Step> {
+        let rng_x = combine_range(&self.x, &other.x)?;
+        let rng_y = combine_range(&self.y, &other.y)?;
+        let rng_z = combine_range(&self.z, &other.z)?;
 
-            self.apply_intern(lid_set, action)
-        } else {
-            let action = |x, y, z, set: &mut Cubes| {
-                set.remove(&(x, y, z));
-            };
-
-            self.apply_intern(lid_set, action)
-        };
+        Some(Step::new(self.on, rng_x, rng_y, rng_z))
     }
 
-    fn apply_intern<A: FnMut(i32, i32, i32, &mut Cubes)>(
-        &self,
-        lid_set: &mut Cubes,
-        mut action: A,
-    ) {
-        for x in self.x.clone() {
-            for y in self.y.clone() {
-                for z in self.z.clone() {
-                    action(x, y, z, lid_set);
-                }
-            }
-        }
+    // The efficient solution
+    fn calc_volume(&self) -> isize {
+        (*self.x.end() - *self.x.start() + 1) as isize
+            * (*self.y.end() - *self.y.start() + 1) as isize
+            * (*self.z.end() - *self.z.start() + 1) as isize
     }
 }
 
+#[inline]
+fn combine_range(
+    rng: &RangeInclusive<i32>,
+    other: &RangeInclusive<i32>,
+) -> Option<RangeInclusive<i32>> {
+    if rng.end() < other.start() || rng.start() > other.end() {
+        return None;
+    }
+
+    let start = min(max(rng.start(), other.start()), other.end());
+    let end = min(max(rng.end(), other.start()), other.end());
+
+    Some(RangeInclusive::new(*start, *end))
+}
+
+// The limit here is small enough to apply the naive solution here
 fn calc_lid_cubes_limit(input: &str) -> usize {
     let steps: Vec<Step> = input.lines().map(Step::from).collect();
 
@@ -108,18 +126,6 @@ fn calc_lid_cubes_limit(input: &str) -> usize {
     lid_set.len()
 }
 
-fn calc_lid_cubes(input: &str) -> usize {
-    let steps: Vec<Step> = input.lines().map(Step::from).collect();
-
-    let mut lid_set = HashSet::new();
-
-    for step in steps {
-        step.apply(&mut lid_set);
-    }
-
-    lid_set.len()
-}
-
 fn part_1() {
     let input = read_text_from_file("21", "22");
     let answer = calc_lid_cubes_limit(input.as_str());
@@ -129,9 +135,28 @@ fn part_1() {
 
 fn part_2() {
     let input = read_text_from_file("21", "22");
-    let answer = calc_lid_cubes(input.as_str());
+    let answer = calc_all_lid_cubes(input.as_str());
 
     println!("Part 2 answer is {answer}")
+}
+
+fn calc_all_lid_cubes(input: &str) -> isize {
+    let steps: Vec<Step> = input.lines().map(Step::from).collect();
+
+    (0..steps.len())
+        .filter(|&i| steps[i].on)
+        .map(|i| calc_sub_step(&steps[i], &steps[i + 1..]))
+        .sum::<isize>()
+}
+
+fn calc_sub_step(step: &Step, rest: &[Step]) -> isize {
+    let rngs_to_sub: Vec<Step> = rest.iter().filter_map(|s| s.combine_sub(step)).collect();
+
+    let rngs_sub_sum: isize = (0..rngs_to_sub.len())
+        .map(|i| calc_sub_step(&rngs_to_sub[i], &rngs_to_sub[i + 1..]))
+        .sum();
+
+    step.calc_volume() - rngs_sub_sum
 }
 
 pub fn run() {
@@ -144,7 +169,6 @@ mod test {
     use super::*;
 
     #[test]
-    #[ignore]
     fn test_part_1() {
         const INPUT: &str = "on x=-20..26,y=-36..17,z=-47..7
 on x=-20..33,y=-21..23,z=-26..28
@@ -234,7 +258,6 @@ off x=-27365..46395,y=31009..98017,z=15428..76570
 off x=-70369..-16548,y=22648..78696,z=-1892..86821
 on x=-53470..21291,y=-120233..-33476,z=-44150..38147
 off x=-93533..-4276,y=-16170..68771,z=-104985..-24507";
-        assert_eq!(calc_lid_cubes(INPUT), 2758514936282235)
+        assert_eq!(calc_all_lid_cubes(INPUT), 2758514936282235)
     }
 }
-
