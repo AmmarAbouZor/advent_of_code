@@ -6,12 +6,12 @@ use std::{
 use crate::utls::read_text_from_file;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-struct State {
+struct State<const N: usize> {
     corridor: [u8; 11],
-    rooms: [Vec<u8>; 4],
+    rooms: [[u8; N]; 4],
 }
 
-impl From<&str> for State {
+impl From<&str> for State<2> {
     fn from(value: &str) -> Self {
         let corridor = [b'.'; 11];
         let lines: Vec<_> = value
@@ -21,17 +21,40 @@ impl From<&str> for State {
             .map(|line| line.as_bytes())
             .collect();
         let rooms = [
-            vec![lines[0][3], lines[1][3]],
-            vec![lines[0][5], lines[1][5]],
-            vec![lines[0][7], lines[1][7]],
-            vec![lines[0][9], lines[1][9]],
+            [lines[0][3], lines[1][3]],
+            [lines[0][5], lines[1][5]],
+            [lines[0][7], lines[1][7]],
+            [lines[0][9], lines[1][9]],
         ];
 
         State { corridor, rooms }
     }
 }
 
-impl State {
+// This has the added values after unfolding
+impl From<&str> for State<4> {
+    fn from(value: &str) -> Self {
+        let corridor = [b'.'; 11];
+        let lines: Vec<_> = value
+            .lines()
+            .skip(2)
+            .take(2)
+            .map(|line| line.as_bytes())
+            .collect();
+        let rooms = [
+            [lines[0][3], b'D', b'D', lines[1][3]],
+            [lines[0][5], b'C', b'B', lines[1][5]],
+            [lines[0][7], b'B', b'A', lines[1][7]],
+            [lines[0][9], b'A', b'C', lines[1][9]],
+        ];
+        State { corridor, rooms }
+    }
+}
+
+/// this represent the ids in the corridor directly above the rooms
+const CORR_ROOMS_IDX: [usize; 4] = [2, 4, 6, 8];
+
+impl<const N: usize> State<N> {
     fn print(&self) {
         println!(
             "{}",
@@ -56,12 +79,7 @@ impl State {
             .all(|(room, ch)| room.iter().all(|b| *b == ch))
     }
 
-    /// this represent the ids in the corridor directly above the rooms
-    const CORR_ROOMS_IDX: [usize; 4] = [2, 4, 6, 8];
-
-    fn get_all_valid_moves(&self) -> Vec<(usize, State)> {
-        let rooms_depth = self.rooms[0].len();
-
+    fn get_all_valid_moves(&self) -> Vec<(usize, State<N>)> {
         let mut moves = Vec::new();
         // === Moving parts from corridor to rooms ===
         for corr_idx in 0..self.corridor.len() {
@@ -71,7 +89,7 @@ impl State {
 
             let target_room_idx = (self.corridor[corr_idx] - b'A') as usize;
             // Check if the way in the corridor to the target room is free
-            let room_corr_idx = State::CORR_ROOMS_IDX[target_room_idx];
+            let room_corr_idx = CORR_ROOMS_IDX[target_room_idx];
             let (corr_start, corr_end) = if corr_idx > room_corr_idx {
                 (room_corr_idx, corr_idx)
             } else {
@@ -82,14 +100,14 @@ impl State {
             }
 
             // find the last free slot in the room
-            let Some(free_room_idx) = (0..rooms_depth)
+            let Some(free_room_idx) = (0..N)
                 .take_while(|i| self.rooms[target_room_idx][*i] == b'.')
                 .last()
             else {
                 continue;
             };
             // Check is the room doesn't have any wrong items
-            if (free_room_idx + 1..rooms_depth)
+            if (free_room_idx + 1..N)
                 .any(|i| self.rooms[target_room_idx][i] != self.corridor[corr_idx])
             {
                 continue;
@@ -100,16 +118,15 @@ impl State {
 
         // === Moving Parts out of the rooms ===
         for room_idx in 0..4 {
-            let Some(non_free_idx) = (0..rooms_depth).find(|i| self.rooms[room_idx][*i] != b'.')
-            else {
+            let Some(non_free_idx) = (0..N).find(|i| self.rooms[room_idx][*i] != b'.') else {
                 continue;
             };
 
-            let room_corr_idx = State::CORR_ROOMS_IDX[room_idx];
+            let room_corr_idx = CORR_ROOMS_IDX[room_idx];
             // Right possibilities
             let moves_right = (room_corr_idx..self.corridor.len())
                 .take_while(|i| self.corridor[*i] == b'.')
-                .filter(|i| !State::CORR_ROOMS_IDX.contains(i))
+                .filter(|i| !CORR_ROOMS_IDX.contains(i))
                 .map(|i| self.make_move(i, room_idx, non_free_idx));
             moves.extend(moves_right);
 
@@ -117,7 +134,7 @@ impl State {
             let moves_left = (0..room_corr_idx)
                 .rev()
                 .take_while(|i| self.corridor[*i] == b'.')
-                .filter(|i| !Self::CORR_ROOMS_IDX.contains(i))
+                .filter(|i| !CORR_ROOMS_IDX.contains(i))
                 .map(|i| self.make_move(i, room_idx, non_free_idx));
             moves.extend(moves_left);
         }
@@ -125,14 +142,14 @@ impl State {
         moves
     }
 
-    fn make_move(&self, idx: usize, room_idx: usize, room_depth: usize) -> (usize, State) {
+    fn make_move(&self, idx: usize, room_idx: usize, room_depth: usize) -> (usize, State<N>) {
         let amph = if self.corridor[idx] == b'.' {
             self.rooms[room_idx][room_depth] as char
         } else {
             self.corridor[idx] as char
         };
 
-        let room_corr_idx = State::CORR_ROOMS_IDX[room_idx];
+        let room_corr_idx = CORR_ROOMS_IDX[room_idx];
         let moves = room_depth + idx.abs_diff(room_corr_idx) + 1;
         let cost = moves * Self::get_amph_cost(amph);
         let mut clone = self.clone();
@@ -154,24 +171,22 @@ impl State {
             _ => unreachable!(),
         }
     }
-
-    fn add_unfolded(&mut self) {
-        self.rooms[0].splice(1..1, [b'D', b'D']);
-        self.rooms[1].splice(1..1, [b'C', b'B']);
-        self.rooms[2].splice(1..1, [b'B', b'A']);
-        self.rooms[3].splice(1..1, [b'A', b'C']);
-    }
 }
 
-fn calc_least_energy(input: &str, unfold: bool) -> usize {
-    let mut state = State::from(input);
-    if unfold {
-        state.add_unfolded();
-    }
+fn calc_least_energy_folded(input: &str) -> usize {
+    let state: State<2> = State::from(input);
+    calc_least_energy(state)
+}
 
+fn calc_least_energy_unfolded(input: &str) -> usize {
+    let state: State<4> = State::from(input);
+    calc_least_energy(state)
+}
+
+fn calc_least_energy<const N: usize>(state: State<N>) -> usize {
     state.print();
 
-    let mut energy_map: HashMap<State, usize> = HashMap::new();
+    let mut energy_map: HashMap<State<N>, usize> = HashMap::new();
     let mut queue = BinaryHeap::new();
     queue.push((Reverse(0), state));
     while let Some((Reverse(cost), state)) = queue.pop() {
@@ -198,14 +213,14 @@ fn calc_least_energy(input: &str, unfold: bool) -> usize {
 
 fn part_1() {
     let input = read_text_from_file("21", "23");
-    let answer = calc_least_energy(input.as_str(), false);
+    let answer = calc_least_energy_folded(input.as_str());
 
     println!("Part 1 answer is {answer}");
 }
 
 fn part_2() {
     let input = read_text_from_file("21", "23");
-    let answer = calc_least_energy(input.as_str(), true);
+    let answer = calc_least_energy_unfolded(input.as_str());
 
     println!("Part 1 answer is {answer}");
 }
@@ -227,8 +242,7 @@ mod test {
 
     #[test]
     fn test_part_1() {
-        assert_eq!(calc_least_energy(INPUT, false), 12521);
-        assert_eq!(calc_least_energy(INPUT, true), 44169);
+        assert_eq!(calc_least_energy_folded(INPUT), 12521);
+        assert_eq!(calc_least_energy_unfolded(INPUT), 44169);
     }
 }
-
