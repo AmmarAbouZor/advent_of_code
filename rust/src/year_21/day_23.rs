@@ -117,12 +117,11 @@ impl<const N: usize> State<N> {
         }
 
         // === Moving Parts out of the rooms ===
-        for room_idx in 0..4 {
+        for (room_idx, &room_corr_idx) in CORR_ROOMS_IDX.iter().enumerate() {
             let Some(non_free_idx) = (0..N).find(|i| self.rooms[room_idx][*i] != b'.') else {
                 continue;
             };
 
-            let room_corr_idx = CORR_ROOMS_IDX[room_idx];
             // Right possibilities
             let moves_right = (room_corr_idx..self.corridor.len())
                 .take_while(|i| self.corridor[*i] == b'.')
