@@ -8,12 +8,12 @@ use crate::utls::read_text_from_file;
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 struct State {
     corridor: [u8; 11],
-    rooms: [[u8; 2]; 4],
+    rooms: [Vec<u8>; 4],
 }
 
 impl From<&str> for State {
     fn from(value: &str) -> Self {
-        let corridore = [b'.'; 11];
+        let corridor = [b'.'; 11];
         let lines: Vec<_> = value
             .lines()
             .skip(2)
@@ -21,16 +21,13 @@ impl From<&str> for State {
             .map(|line| line.as_bytes())
             .collect();
         let rooms = [
-            [lines[0][3], lines[1][3]],
-            [lines[0][5], lines[1][5]],
-            [lines[0][7], lines[1][7]],
-            [lines[0][9], lines[1][9]],
+            vec![lines[0][3], lines[1][3]],
+            vec![lines[0][5], lines[1][5]],
+            vec![lines[0][7], lines[1][7]],
+            vec![lines[0][9], lines[1][9]],
         ];
 
-        State {
-            corridor: corridore,
-            rooms,
-        }
+        State { corridor, rooms }
     }
 }
 
@@ -41,7 +38,7 @@ impl State {
             self.corridor.iter().map(|b| *b as char).collect::<String>()
         );
 
-        for i in 0..2 {
+        for i in 0..self.rooms[0].len() {
             println!(
                 "  {} {} {} {}  ",
                 self.rooms[0][i] as char,
@@ -157,10 +154,21 @@ impl State {
             _ => unreachable!(),
         }
     }
+
+    fn add_unfolded(&mut self) {
+        self.rooms[0].splice(1..1, [b'D', b'D']);
+        self.rooms[1].splice(1..1, [b'C', b'B']);
+        self.rooms[2].splice(1..1, [b'B', b'A']);
+        self.rooms[3].splice(1..1, [b'A', b'C']);
+    }
 }
 
-fn calc_least_energy(input: &str) -> usize {
-    let state = State::from(input);
+fn calc_least_energy(input: &str, unfold: bool) -> usize {
+    let mut state = State::from(input);
+    if unfold {
+        state.add_unfolded();
+    }
+
     state.print();
 
     let mut energy_map: HashMap<State, usize> = HashMap::new();
@@ -190,12 +198,17 @@ fn calc_least_energy(input: &str) -> usize {
 
 fn part_1() {
     let input = read_text_from_file("21", "23");
-    let answer = calc_least_energy(input.as_str());
+    let answer = calc_least_energy(input.as_str(), false);
 
     println!("Part 1 answer is {answer}");
 }
 
-fn part_2() {}
+fn part_2() {
+    let input = read_text_from_file("21", "23");
+    let answer = calc_least_energy(input.as_str(), true);
+
+    println!("Part 1 answer is {answer}");
+}
 
 pub fn run() {
     part_1();
@@ -214,7 +227,8 @@ mod test {
 
     #[test]
     fn test_part_1() {
-        assert_eq!(calc_least_energy(INPUT), 12521)
+        assert_eq!(calc_least_energy(INPUT, false), 12521);
+        assert_eq!(calc_least_energy(INPUT, true), 44169);
     }
 }
 
