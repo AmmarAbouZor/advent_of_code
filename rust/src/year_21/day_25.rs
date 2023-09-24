@@ -66,12 +66,7 @@ impl Grid {
 
     #[inline]
     fn get_next_col(&self, col: usize) -> usize {
-        let mut next_col = col + 1;
-        if next_col == self.cells[0].len() {
-            next_col = 0;
-        }
-
-        next_col
+        (col + 1) % self.cells[0].len()
     }
 
     fn get_cells_can_move_south(&self) -> Vec<(usize, usize)> {
@@ -89,12 +84,7 @@ impl Grid {
 
     #[inline]
     fn get_next_row(&self, row: usize) -> usize {
-        let mut next_row = row + 1;
-        if next_row == self.cells.len() {
-            next_row = 0;
-        }
-
-        next_row
+        (row + 1) % self.cells.len()
     }
 
     fn move_cells_east(&mut self, cells: &[(usize, usize)]) {
