@@ -1,156 +1,118 @@
-use std::{collections::HashMap, isize};
+use std::collections::HashSet;
 
 use crate::utls::read_text_from_file;
 
-#[derive(Debug, Clone, Copy)]
-enum Instruction {
-    Input(char),
-    Add(char, Value),
-    Multiply(char, Value),
-    Divide(char, Value),
-    Mod(char, Value),
-    Equal(char, Value),
+// This is borrowed from a solution found online
+//
+// Decompiling each block by hand we get:
+//   00:  inp w      ; [I, 0, 0, Z]
+//   01:  mul x 0
+//   02:  add x z    ; [I, Z, 0, Z]
+//   03:  mod x 26   ; [I, Z%26, 0, Z]
+//   04:  div z <A>  ; [I, Z%26, 0, Z/A]
+//   05:  add x <B>  ; [I, Z%26 + B, 0, Z/A]
+//   06:  eql x w
+//   07:  eql x 0    ; [I, (Z%26 + B) != I), 0, Z/A]
+//   08:  mul y 0
+//   09:  add y 25   ; [I, (Z%26 + B) != I, 25, Z/A]
+//   10:  mul y x    ; [I, (Z%26 + B) != I, 25 * X, Z/A]
+//   11:  add y 1    ; [I, (Z%26 + B) != I, 25 * X + 1, Z/A]
+//   12:  mul z y    ; [I, (Z%26 + B) != I, 25 * X + 1, (Z/A) * (25 * X + 1)]
+//   13:  mul y 0
+//   14:  add y w    ; [I, (Z%26 + B) != I, I, (Z/A) * (25 * X + 1)]
+//   15:  add y <C>  ; [I, (Z%26 + B) != I, I + C, (Z/A) * (25 * X + 1)]
+//   16:  mul y x    ; [I, (Z%26 + B) != I, (I + C) * X, (Z/A) * (25 * X + 1)]
+//   17:  add z y    ; [I, (Z%26 + B) != I, (I + C) * X, (Z/A) * (25 * X + 1) + (I + C) * X]
+// => X = (Z%26 + B) != I
+//    Z = (Z/A) * (25 * X + 1) + (I + C) * X
+//
+// Analyzing this formula, we see that z will never go to zero if at block b `z > 26^b`
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct State {
+    block_idx: usize,
+    z: i64,
 }
 
-#[derive(Debug, Clone, Copy)]
-enum Value {
-    Digit(isize),
-    Variable(char),
-}
-
-impl Value {
-    fn get_val(&self, varaiables: &HashMap<char, isize>) -> isize {
-        match self {
-            Value::Digit(digit) => *digit,
-            Value::Variable(ch) => *varaiables.get(ch).unwrap_or(&0),
-        }
+impl State {
+    fn new(block_idx: usize, z: i64) -> Self {
+        Self { block_idx, z }
     }
 }
 
-impl From<char> for Value {
-    fn from(ch: char) -> Self {
-        match ch.to_digit(10) {
-            Some(digit) => Value::Digit(digit as isize),
-            None => Value::Variable(ch),
-        }
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// This represents the changing variables on each iteration
+/// See the Decompiling comment for more details
+struct Block {
+    a: i64,
+    b: i64,
+    c: i64,
+}
+
+impl Block {
+    fn new(a: i64, b: i64, c: i64) -> Self {
+        Self { a, b, c }
     }
 }
 
-impl From<&str> for Instruction {
-    fn from(line: &str) -> Self {
-        use Instruction as I;
-        let mut parts = line.split_whitespace();
-        let name = parts.next().unwrap();
-        let char_1 = parts.next().unwrap().chars().next().unwrap();
-        let char_2 = parts.next().and_then(|text| text.chars().next());
-        match name {
-            "inp" => I::Input(char_1),
-            "add" => I::Add(char_1, char_2.unwrap().into()),
-            "mul" => I::Multiply(char_1, char_2.unwrap().into()),
-            "div" => I::Divide(char_1, char_2.unwrap().into()),
-            "mod" => I::Mod(char_1, char_2.unwrap().into()),
-            "eql" => I::Equal(char_1, char_2.unwrap().into()),
-            invalid => unreachable!("invalid input {invalid}"),
-        }
-    }
-}
-
-impl Instruction {
-    fn apply(
-        &self,
-        variables: &mut HashMap<char, isize>,
-        input: &mut Vec<isize>,
-    ) -> Result<(), &str> {
-        let get_two_value = |a, b: &Value| {
-            let a_val = variables.get(a).unwrap_or(&0);
-            let b_val = b.get_val(variables);
-            (*a_val, b_val)
+fn find_model_num(
+    cache: &mut HashSet<State>,
+    blocks: &[Block],
+    target_rng: &[i64],
+    block_idx: usize,
+    z: i64,
+) -> Option<i64> {
+    if block_idx == blocks.len() {
+        return match z {
+            0 => Some(0),
+            _ => None,
         };
-        match self {
-            Instruction::Input(a) => {
-                let val = input.pop().unwrap();
-                variables.entry(*a).and_modify(|v| *v = val).or_insert(val);
-                Ok(())
-            }
-            Instruction::Add(a, b) => {
-                let (a_val, b_val) = get_two_value(a, b);
-                let val = a_val + b_val;
-                variables.entry(*a).and_modify(|v| *v = val).or_insert(val);
-                Ok(())
-            }
-            Instruction::Multiply(a, b) => {
-                let (a_val, b_val) = get_two_value(a, b);
-                let val = a_val * b_val;
-                variables.entry(*a).and_modify(|v| *v = val).or_insert(val);
-                Ok(())
-            }
-            Instruction::Divide(a, b) => {
-                let (a_val, b_val) = get_two_value(a, b);
-                if b_val == 0 {
-                    return Err("Divide by zero");
-                }
-                let val = a_val / b_val;
-                variables.entry(*a).and_modify(|v| *v = val).or_insert(val);
-                Ok(())
-            }
-            Instruction::Mod(a, b) => {
-                let (a_val, b_val) = get_two_value(a, b);
-                if a_val.is_negative() || b_val.is_negative() {
-                    return Err("Mod negative value");
-                }
-                let val = a_val % b_val;
-                variables.entry(*a).and_modify(|v| *v = val).or_insert(val);
-                Ok(())
-            }
-            Instruction::Equal(a, b) => {
-                let (a_val, b_val) = get_two_value(a, b);
-                let val = if a_val == b_val { 1 } else { 0 };
-                variables.entry(*a).and_modify(|v| *v = val).or_insert(val);
-                Ok(())
-            }
+    }
+
+    if z > 26i64.pow(14 - block_idx as u32) {
+        return None;
+    }
+
+    if cache.contains(&State::new(block_idx, z)) {
+        return None;
+    }
+
+    let block = blocks.get(block_idx).unwrap();
+
+    for &i in target_rng {
+        let new_z = if z % 26 + block.b == i {
+            z / block.a
+        } else {
+            (z / block.a) * 26 + i + block.c
+        };
+
+        if let Some(n) = find_model_num(cache, blocks, target_rng, block_idx + 1, new_z) {
+            return Some(i * 10i64.pow(13 - block_idx as u32) + n);
         }
     }
+
+    cache.insert(State::new(block_idx, z));
+
+    None
 }
 
-fn num_to_valid_rev_digits(mut num: isize) -> Option<Vec<isize>> {
-    let mut digits = Vec::with_capacity(14);
-    while num.is_positive() {
-        let digit = num % 10;
-        if digit == 0 {
-            return None;
-        }
-        digits.push(digit);
-        num /= 10;
-    }
+fn find_max_valid(input: &str) -> i64 {
+    let insts: Vec<_> = input.lines().collect();
 
-    assert_eq!(digits.len(), 14);
+    let blocks: Vec<_> = insts
+        .chunks(18)
+        .map(|chunk| {
+            let a = chunk[4][6..].parse().unwrap();
+            let b = chunk[5][6..].parse().unwrap();
+            let c = chunk[15][6..].parse().unwrap();
 
-    Some(digits)
-}
+            Block::new(a, b, c)
+        })
+        .collect();
 
-fn find_max_valid(input: &str) -> isize {
-    let insts: Vec<_> = input.lines().map(Instruction::from).collect();
-    let nums = (111_111_111_111_11..=999_999_999_999_99)
-        .rev()
-        .flat_map(|num| num_to_valid_rev_digits(num).map(|digits| (num, digits)));
-    let mut counter = 0;
-    for (num, mut digits) in nums {
-        counter += 1;
+    let mut cache = HashSet::new();
 
-        if counter % 500 == 0 {
-            println!("{num}");
-        }
-
-        let mut variables = HashMap::new();
-        let has_errors = insts
-            .iter()
-            .any(|ins| ins.apply(&mut variables, &mut digits).is_err());
-        if !has_errors && *variables.get(&'z').unwrap() == 0 {
-            return num;
-        }
-    }
-
-    unreachable!()
+    find_model_num(&mut cache, &blocks, &[9, 8, 7, 6, 5, 4, 3, 2, 1], 0, 0).unwrap()
 }
 
 fn part_1() {
@@ -165,21 +127,4 @@ fn part_2() {}
 pub fn run() {
     part_1();
     part_2();
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_num_to_digit() {
-        let input = 12345678912345;
-        assert_eq!(
-            num_to_valid_rev_digits(input),
-            Some(vec![5, 4, 3, 2, 1, 9, 8, 7, 6, 5, 4, 3, 2, 1])
-        );
-
-        // Zero is invalid input
-        assert_eq!(num_to_valid_rev_digits(10234567891234), None);
-    }
 }
