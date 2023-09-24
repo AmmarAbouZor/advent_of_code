@@ -97,9 +97,9 @@ fn find_model_num(
 }
 
 fn find_max_valid(input: &str) -> i64 {
-    let insts: Vec<_> = input.lines().collect();
+    let lines: Vec<_> = input.lines().collect();
 
-    let blocks: Vec<_> = insts
+    let blocks: Vec<_> = lines
         .chunks(18)
         .map(|chunk| {
             let a = chunk[4][6..].parse().unwrap();
@@ -115,6 +115,25 @@ fn find_max_valid(input: &str) -> i64 {
     find_model_num(&mut cache, &blocks, &[9, 8, 7, 6, 5, 4, 3, 2, 1], 0, 0).unwrap()
 }
 
+fn find_min_valid(input: &str) -> i64 {
+    let lines: Vec<_> = input.lines().collect();
+
+    let blocks: Vec<_> = lines
+        .chunks(18)
+        .map(|chunk| {
+            let a = chunk[4][6..].parse().unwrap();
+            let b = chunk[5][6..].parse().unwrap();
+            let c = chunk[15][6..].parse().unwrap();
+
+            Block::new(a, b, c)
+        })
+        .collect();
+
+    let mut cache = HashSet::new();
+
+    find_model_num(&mut cache, &blocks, &[1, 2, 3, 4, 5, 6, 7, 8, 9], 0, 0).unwrap()
+}
+
 fn part_1() {
     let input = read_text_from_file("21", "24");
     let answer = find_max_valid(input.as_str());
@@ -122,7 +141,12 @@ fn part_1() {
     println!("Part 1 answer is {answer}");
 }
 
-fn part_2() {}
+fn part_2() {
+    let input = read_text_from_file("21", "24");
+    let answer = find_min_valid(input.as_str());
+
+    println!("Part 2 answer is {answer}");
+}
 
 pub fn run() {
     part_1();
