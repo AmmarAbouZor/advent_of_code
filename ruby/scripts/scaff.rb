@@ -14,12 +14,14 @@ class AocScaff
 
     rb_file = File.join(next_day_dir_path, 'adv.rb')
     input_file = File.join(next_day_dir_path, 'input.txt')
+    test_input_file = File.join(next_day_dir_path, 'test.txt')
 
     File.new(rb_file, 'w')
     File.new(input_file, 'w')
-    warn "Created files:\n #{rb_file} \n #{input_file}"
+    File.new(test_input_file, 'w')
+    warn "Created files:\n #{rb_file} \n #{input_file} \n #{test_input_file}"
 
-    puts input_file, rb_file
+    puts input_file, test_input_file, rb_file
   end
 
   def self.last_day_path
