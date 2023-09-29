@@ -10,16 +10,28 @@ class AocScaff
     next_day = find_next_day_folder
 
     next_day_dir_path = File.join(Dir.pwd, YEAR, next_day)
-
     Dir.mkdir(next_day_dir_path)
 
     rb_file = File.join(next_day_dir_path, 'adv.rb')
     input_file = File.join(next_day_dir_path, 'input.txt')
 
     File.new(rb_file, 'w')
-    puts "Created file: #{rb_file}"
     File.new(input_file, 'w')
-    puts "Created file: #{input_file}"
+    warn "Created files:\n #{rb_file} \n #{input_file}"
+
+    puts input_file, rb_file
+  end
+
+  def self.last_day_path
+    check_pwd
+    day_paths = Dir.glob(File.join(Dir.pwd, YEAR, '*'))
+                   .select { |entry| File.directory?(entry) }
+
+    raise "There are no folders in #{YEAR}" if day_paths.empty?
+
+    day_paths.sort
+
+    puts day_paths.last
   end
 
   private_class_method def self.check_pwd
