@@ -39,29 +39,29 @@ class Aoc02 < AocBase
     end
   end
 
-  def calc_valid_passes_1(input)
+  def calc_valid_passes1(input)
     input.lines
          .map { |line| Password.from_string(line) }
-         .count { |pass| pass.valid_1? }
+         .count(&:valid_1?)
   end
 
-  def calc_valid_passes_2(input)
+  def calc_valid_passes2(input)
     input.lines
          .map { |line| Password.from_string(line) }
-         .count { |pass| pass.valid_2? }
+         .count(&:valid_2?)
   end
 
   def part_one
-    calc_valid_passes_1(@input)
+    calc_valid_passes1(@input)
   end
 
   def part_two
-    calc_valid_passes_2(@input)
+    calc_valid_passes2(@input)
   end
 
   def do_tests
-    assert_equal calc_valid_passes_1(@test_input), 2
-    assert_equal calc_valid_passes_2(@test_input), 1
+    assert_equal calc_valid_passes1(@test_input), 2
+    assert_equal calc_valid_passes2(@test_input), 1
     puts 'tests pass'
   end
 end
