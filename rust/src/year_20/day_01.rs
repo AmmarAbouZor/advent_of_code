@@ -13,10 +13,10 @@ fn calc_sum_multi(input: &str) -> usize {
 fn find_two_some(nums: &[usize], target: usize) -> Option<(usize, usize)> {
     let mut sums_map = HashMap::new();
     for num in nums {
-        let to_target = target.wrapping_sub(*num);
         if let Some(&second_num) = sums_map.get(num) {
             return Some((*num, second_num));
         } else {
+            let to_target = target.wrapping_sub(*num);
             sums_map.insert(to_target, *num);
         }
     }
@@ -73,4 +73,3 @@ mod test {
         assert_eq!(calc_three_some(INPUT), 241861950);
     }
 }
-
