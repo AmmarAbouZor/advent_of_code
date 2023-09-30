@@ -16,7 +16,10 @@ class AocScaff
     input_file = File.join(next_day_dir_path, 'input.txt')
     test_input_file = File.join(next_day_dir_path, 'test.txt')
 
-    File.new(rb_file, 'w')
+    File.open(rb_file, 'w') do |file|
+      template = get_code_template(YEAR, next_day)
+      file.write(template)
+    end
     File.new(input_file, 'w')
     File.new(test_input_file, 'w')
     warn "Created files:\n #{rb_file} \n #{input_file} \n #{test_input_file}"
@@ -60,5 +63,34 @@ class AocScaff
     raise "Day can't be bigger than 25" if last_day >= 25
 
     format('%02d', (last_day + 1))
+  end
+
+  private_class_method def self.get_code_template(year, day)
+    <<~TEMPLATE
+      # frozen_string_literal: true
+
+      require '../../aoc_base'
+
+      # Year #{year} Day #{day}
+      class Aoc#{day} < AocBase
+        def part_one
+          nil
+        end
+
+        def part_two
+          nil
+        end
+
+        def do_tests
+          assert_equal 0, 0
+          puts 'tests pass'
+        end
+      end
+
+      if __FILE__ == $PROGRAM_NAME
+        aoc = Aoc#{day}.new
+        aoc.run
+      end
+    TEMPLATE
   end
 end
