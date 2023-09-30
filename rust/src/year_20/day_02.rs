@@ -22,28 +22,53 @@ impl<'a> From<&'a str> for Password<'a> {
 }
 
 impl<'a> Password<'a> {
-    fn is_valid(&self) -> bool {
+    fn is_valid_1(&self) -> bool {
         let ch_count = self.text.chars().filter(|&ch| ch == self.ch).count();
 
         self.rng.contains(&ch_count)
     }
+
+    fn is_valid_2(&self) -> bool {
+        let mut chars = self.text.chars();
+        let start = *self.rng.start();
+        let end = *self.rng.end();
+        if let (Some(ch_1), Some(ch_2)) = (chars.nth(start - 1), chars.nth(end - 1 - start)) {
+            ch_1 != ch_2 && (self.ch == ch_1 || self.ch == ch_2)
+        } else {
+            false
+        }
+    }
 }
 
-fn calc_valid_password(input: &str) -> usize {
+fn calc_valid_password_1(input: &str) -> usize {
     input
         .lines()
         .map(Password::from)
-        .filter(Password::is_valid)
+        .filter(Password::is_valid_1)
+        .count()
+}
+
+fn calc_valid_password_2(input: &str) -> usize {
+    input
+        .lines()
+        .map(Password::from)
+        .filter(Password::is_valid_2)
         .count()
 }
 
 fn part_1() {
     let input = read_text_from_file("20", "02");
-    let answer = calc_valid_password(input.as_str());
+    let answer = calc_valid_password_1(input.as_str());
 
     println!("Part 1 answer is {answer}");
 }
-fn part_2() {}
+
+fn part_2() {
+    let input = read_text_from_file("20", "02");
+    let answer = calc_valid_password_2(input.as_str());
+
+    println!("Part 2 answer is {answer}");
+}
 
 pub fn run() {
     part_1();
@@ -60,7 +85,8 @@ mod test {
 
     #[test]
     fn test_part_1() {
-        assert_eq!(calc_valid_password(INPUT), 2)
+        assert_eq!(calc_valid_password_1(INPUT), 2);
+        assert_eq!(calc_valid_password_2(INPUT), 1);
     }
 }
 
