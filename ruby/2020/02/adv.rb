@@ -27,28 +27,41 @@ class Aoc02 < AocBase
       "min: #{@min}, max: #{@max}, ch: #{@ch}, text: #{@text}"
     end
 
-    def valid?
+    def valid_1?
       count = @text.count(@ch)
       count >= @min && count <= @max
     end
+
+    def valid_2?
+      ch1 = @text[@min - 1]
+      ch2 = @text[@max - 1]
+      ch1 != ch2 && (ch1 == @ch || ch2 == @ch)
+    end
   end
 
-  def calc_valid_passes(input)
+  def calc_valid_passes_1(input)
     input.lines
          .map { |line| Password.from_string(line) }
-         .count { |pass| pass.valid? }
+         .count { |pass| pass.valid_1? }
+  end
+
+  def calc_valid_passes_2(input)
+    input.lines
+         .map { |line| Password.from_string(line) }
+         .count { |pass| pass.valid_2? }
   end
 
   def part_one
-    calc_valid_passes(@input)
+    calc_valid_passes_1(@input)
   end
 
   def part_two
-    nil
+    calc_valid_passes_2(@input)
   end
 
   def do_tests
-    assert_equal calc_valid_passes(@test_input), 2
+    assert_equal calc_valid_passes_1(@test_input), 2
+    assert_equal calc_valid_passes_2(@test_input), 1
     puts 'tests pass'
   end
 end
