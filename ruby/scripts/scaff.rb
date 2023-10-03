@@ -5,7 +5,10 @@
 class AocScaff
   YEAR = '2020'
 
-  def self.scaff_next_day
+  # Create code and input files with a tempalte for the code file
+  #
+  # @param [Boolean] test_file specify if a separate file for test input should be created
+  def self.scaff_next_day(test_file)
     check_pwd
     next_day = find_next_day_folder
 
@@ -14,17 +17,24 @@ class AocScaff
 
     rb_file = File.join(next_day_dir_path, 'adv.rb')
     input_file = File.join(next_day_dir_path, 'input.txt')
-    test_input_file = File.join(next_day_dir_path, 'test.txt')
+
+    created_files = [rb_file, input_file]
 
     File.open(rb_file, 'w') do |file|
       template = get_code_template(YEAR, next_day)
       file.write(template)
     end
     File.new(input_file, 'w')
-    File.new(test_input_file, 'w')
-    warn "Created files:\n #{rb_file} \n #{input_file} \n #{test_input_file}"
 
-    puts input_file, test_input_file, rb_file
+    if test_file == true
+      test_input_file = File.join(next_day_dir_path, 'test.txt')
+      File.new(test_input_file, 'w')
+      created_files << test_input_file
+    end
+
+    warn "Created files:\n #{created_files.join('\n')}"
+
+    created_files.reverse_each { |file| puts file }
   end
 
   def self.last_day_path
