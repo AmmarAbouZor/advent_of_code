@@ -38,7 +38,7 @@ class Aoc05 < AocBase
         when 'F'
           max = (min + max) / 2
         else
-          raise "Rows: Invalide char #{char}"
+          raise "Rows: Invalid char #{char}"
         end
       end
 
@@ -56,7 +56,7 @@ class Aoc05 < AocBase
         when 'L'
           max = (min + max) / 2
         else
-          raise "Cols: Invalide char '#{char}'"
+          raise "Cols: Invalid char '#{char}'"
         end
       end
 
@@ -72,7 +72,17 @@ class Aoc05 < AocBase
   end
 
   def part_two
-    nil
+    all_ids = @input
+              .split(/\n/)
+              .map { |line| Seat.from_string(line).calc_id }
+              .sort
+
+    last_id = all_ids[0]
+    all_ids[1..].each do |id|
+      return id - 1 if id - last_id != 1
+
+      last_id = id
+    end
   end
 
   def do_tests
