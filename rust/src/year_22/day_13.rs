@@ -78,7 +78,13 @@ impl PartialEq for Entry {
 
 impl PartialOrd for Entry {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        fn cmp_lists(s: &[Entry], o: &[Entry]) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Entry {
+    fn cmp(&self, other: &Self) -> Ordering {
+        fn cmp_lists(s: &[Entry], o: &[Entry]) -> Ordering {
             let mut ordering = Ordering::Equal;
 
             let mut s_iter = s.iter();
@@ -93,11 +99,11 @@ impl PartialOrd for Entry {
                 }
             }
 
-            Some(ordering)
+            ordering
         }
 
         match (self, other) {
-            (Entry::Val(s), Entry::Val(o)) => s.partial_cmp(o),
+            (Entry::Val(s), Entry::Val(o)) => s.cmp(o),
             (Entry::List(s), Entry::List(o)) => cmp_lists(s, o),
             (Entry::List(s), Entry::Val(o)) => {
                 let o = vec![Entry::Val(*o)];
@@ -108,12 +114,6 @@ impl PartialOrd for Entry {
                 cmp_lists(&s, o)
             }
         }
-    }
-}
-
-impl Ord for Entry {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.partial_cmp(other).unwrap()
     }
 }
 

@@ -1,4 +1,5 @@
 use crate::utls::read_text_from_file;
+use std::fmt::Write;
 
 #[derive(Debug)]
 enum PacketType {
@@ -47,8 +48,10 @@ fn calc_decoded_versions_sum(input: &str) -> usize {
 fn hex_to_binary(hex: &str) -> String {
     hex.chars()
         .map(|ch| ch.to_digit(16).unwrap())
-        .map(|num| format!("{:04b}", num))
-        .collect()
+        .fold(String::new(), |mut output, num| {
+            let _ = write!(output, "{:04b}", num);
+            output
+        })
 }
 
 fn decode_packet_version(binary: &[u8], idx: &mut usize, versions: &mut Vec<usize>) {

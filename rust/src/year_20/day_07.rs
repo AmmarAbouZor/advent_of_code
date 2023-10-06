@@ -16,7 +16,7 @@ impl<'a> BagEntry<'a> {
     }
 }
 
-fn parse_bags<'a>(input: &'a str) -> HashMap<&'a str, Vec<BagEntry<'a>>> {
+fn parse_bags(input: &str) -> HashMap<&str, Vec<BagEntry<'_>>> {
     let mut bags = HashMap::new();
 
     for line in input.lines() {

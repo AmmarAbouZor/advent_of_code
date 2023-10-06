@@ -134,7 +134,7 @@ fn get_tuning_frequency(input: &str, max: isize) -> isize {
     sensors
         .flat_map(|sensor| sensor.get_converage_area(max))
         .for_each(|(y, rng)| {
-            let rngs = ranges_map.entry(y).or_insert(Vec::new());
+            let rngs = ranges_map.entry(y).or_default();
             rngs.push(rng);
         });
 
