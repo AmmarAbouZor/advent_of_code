@@ -46,22 +46,31 @@ class Aoc07 < AocBase
   def get_contain_count(input)
     bags_map = parse_input(input)
 
-    containig_bags = Set.new
-    containig_bags.add(TARGET_NAME)
+    containing_bags = Set.new
+    containing_bags.add(TARGET_NAME)
     has_new_bags = true
     while has_new_bags
       has_new_bags = false
       bags_map.each do |name, children|
-        next if containig_bags.include?(name)
+        next if containing_bags.include?(name)
 
-        if children.any? { |child| containig_bags.include?(child.name) }
-          containig_bags.add(name)
+        if children.any? { |child| containing_bags.include?(child.name) }
+          containing_bags.add(name)
           has_new_bags = true
         end
       end
     end
 
-    containig_bags.length - 1
+    containing_bags.length - 1
+  end
+
+  def get_shiny_cost(input)
+    bags_map = parse_input(input)
+    get_child_count(TARGET_NAME, bags_map) - 1
+  end
+
+  def get_child_count(bag_name, bags_map)
+    bags_map[bag_name].inject(1) { |acc, child| acc + get_child_count(child.name, bags_map) * child.count }
   end
 
   def part_one
@@ -69,11 +78,12 @@ class Aoc07 < AocBase
   end
 
   def part_two
-    nil
+    get_shiny_cost(@input)
   end
 
   def do_tests
     assert_equal get_contain_count(@test_input), 4
+    assert_equal get_shiny_cost(@test_input), 32
     puts 'tests pass'
   end
 end
