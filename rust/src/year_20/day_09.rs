@@ -3,6 +3,8 @@ use std::{
     usize,
 };
 
+use itertools::{Itertools, MinMaxResult::MinMax};
+
 use crate::utls::read_text_from_file;
 
 fn find_first_invalid(input: &str, len: usize) -> isize {
@@ -40,18 +42,44 @@ fn check_two_sum(target: isize, nums: &VecDeque<isize>) -> bool {
     false
 }
 
-fn part_1() {
-    let input = read_text_from_file("20", "09");
-    let answer = find_first_invalid(&input, 25);
+fn find_contiguous_set(input: &str, target: isize) -> isize {
+    let nums: Vec<isize> = input.lines().map(|line| line.parse().unwrap()).collect();
 
-    println!("Part 1 answer is {answer}")
+    for idx in 0..nums.len() {
+        let mut sum = nums[idx];
+        let mut next_idx = idx + 1;
+
+        while sum < target {
+            sum += nums[next_idx];
+            if sum == target {
+                if let MinMax(&min, &max) = &nums[idx..=next_idx].iter().minmax() {
+                    return min + max;
+                }
+            }
+            next_idx += 1;
+        }
+    }
+
+    unreachable!()
 }
 
-fn part_2() {}
+fn part_1(input: &str) -> isize {
+    let answer = find_first_invalid(input, 26);
+    println!("Part 1 answer is {answer}");
+
+    answer
+}
+
+fn part_2(input: &str, answer_1: isize) {
+    let answer = find_contiguous_set(input, answer_1);
+
+    println!("Part 2 answer is {answer}");
+}
 
 pub fn run() {
-    part_1();
-    part_2();
+    let input = read_text_from_file("20", "09");
+    let answer_1 = part_1(&input);
+    part_2(&input, answer_1);
 }
 
 #[cfg(test)]
@@ -82,6 +110,6 @@ mod test {
     #[test]
     fn test_() {
         assert_eq!(find_first_invalid(INPUT, 5), 127);
+        assert_eq!(find_contiguous_set(INPUT, 127), 62);
     }
 }
-
