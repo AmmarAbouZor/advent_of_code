@@ -29,16 +29,34 @@ class Aoc09 < AocBase
     end
   end
 
+  def calc_contiguous_val(target, input)
+    nums = input.lines.map(&:to_i)
+    nums.each_with_index do |num, idx|
+      sum = num
+      range_idx = idx
+      while sum <= target
+        range_idx += 1
+        sum += nums[range_idx]
+        if sum == target
+          min, max = nums[idx..range_idx].minmax
+          return min + max
+        end
+      end
+    end
+  end
+
   def part_one
     get_first_invalid(25, @input)
   end
 
   def part_two
-    nil
+    target = part_one
+    calc_contiguous_val(target, @input)
   end
 
   def do_tests
     assert_equal get_first_invalid(5, @test_input), 127
+    assert_equal calc_contiguous_val(127, @test_input), 62
     puts 'tests pass'
   end
 end
