@@ -18,7 +18,7 @@ def has_two_sum(target: int, nums: list[int]) -> bool:
     return False
 
 
-def find_first_invalid(depth: int, input: str):
+def find_first_invalid(depth: int, input: str) -> int:
     nums = [int(line) for line in input.splitlines()]
     start_idx = 0
     end_idx = depth
@@ -29,23 +29,45 @@ def find_first_invalid(depth: int, input: str):
         end_idx += 1
 
 
-def part_1():
-    answer = find_first_invalid(25, get_input())
+def find_contiguous_num(target: int, input: str) -> int:
+    nums = [int(line) for line in input.splitlines()]
+    for idx, num in enumerate(nums):
+        sum = num
+        moving_idx = idx
+        while sum <= target:
+            moving_idx += 1
+            sum += nums[moving_idx]
+            if sum == target:
+                return min(nums[idx : moving_idx + 1]) + max(nums[idx : moving_idx + 1])
+
+    raise ValueError("Unreachable")
+
+
+def part_1(input: str) -> int:
+    answer = find_first_invalid(25, input)
     print(f"Part 1 answer is {answer}")
 
+    return answer
 
-def part_2():
-    pass
+
+def part_2(input: str, target: int):
+    answer = find_contiguous_num(target, input)
+    print(f"Part 2 answer is {answer}")
 
 
 def run_test():
-    result_1 = find_first_invalid(5, get_test_input())
+    input = get_test_input()
+    result_1 = find_first_invalid(5, input)
     assert result_1 == 127, f"expected {127}, result {result_1}"
+
+    result_2 = find_contiguous_num(result_1, input)
+    assert result_2 == 62, f"expected {62}, result {result_2}"
 
     print("test pass")
 
 
 if __name__ == "__main__":
     run_test()
-    part_1()
-    part_2()
+    input = get_input()
+    target = part_1(input)
+    part_2(input, target)
