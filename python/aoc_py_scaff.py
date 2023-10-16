@@ -25,22 +25,30 @@ def get_test_input() -> str:
         return f.read()
 
 
-def part_1():
+def part_1(input: str):
     pass
 
 
-def part_2():
+def part_2(input: str):
     pass
 
 
 def run_test():
-    pass
+    input = get_test_input()
+    answer_1 = 0
+    assert answer_1 == 0, f"Expected: '{0}', Found: '{answer_1}'"
+    answer_2 = 0
+    assert answer_2 == 0, f"Expected: '{0}', Found: '{answer_2}'"
+
+    print("Tests passed!")
 
 
 if __name__ == "__main__":
     run_test()
-    part_1()
-    part_2()
+    input = get_input()
+    part_1(input)
+    part_2(input)
+
 """
 
 
