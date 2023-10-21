@@ -28,16 +28,31 @@ class Aoc10 < AocBase
     diff1 * diff3
   end
 
+  def calc_dist_ways(input)
+    nums = input.lines.map(&:to_i)
+    nums.sort!
+
+    ways_map = Hash.new(0)
+    ways_map[0] = 1
+
+    nums.each do |num|
+      ways_map[num] = ways_map[num - 1] + ways_map[num - 2] + ways_map[num - 3]
+    end
+
+    ways_map[nums[-1]]
+  end
+
   def part_one
     calc_diff_prod(@input)
   end
 
   def part_two
-    nil
+    calc_dist_ways(@input)
   end
 
   def do_tests
     assert_equal calc_diff_prod(@test_input), 22 * 10
+    assert_equal calc_dist_ways(@test_input), 19_208
     puts 'tests pass'
   end
 end
