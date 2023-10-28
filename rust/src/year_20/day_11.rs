@@ -60,13 +60,10 @@ impl SeatLayout {
                         let all_empty = (row.saturating_sub(1)..=row + 1)
                             .flat_map(|r| (col.saturating_sub(1)..=col + 1).map(move |c| (r, c)))
                             .all(|(r, c)| {
-                                if let Some(state) =
-                                    self.cells.get(r).and_then(|row_slice| row_slice.get(c))
-                                {
-                                    !matches!(state, State::Occupied)
-                                } else {
-                                    true
-                                }
+                                let state =
+                                    self.cells.get(r).and_then(|row_slice| row_slice.get(c));
+
+                                !matches!(state, Some(State::Occupied))
                             });
                         if all_empty {
                             changed = true;
