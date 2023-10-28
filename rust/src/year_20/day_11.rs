@@ -45,7 +45,7 @@ impl From<&str> for SeatLayout {
 }
 
 impl SeatLayout {
-    fn apply_round(&mut self) -> bool {
+    fn apply_round_surround(&mut self) -> bool {
         let mut changed = false;
 
         let rows_count = self.cells.len();
@@ -105,6 +105,95 @@ impl SeatLayout {
         changed
     }
 
+    fn apply_round_visible(&mut self) -> bool {
+        let mut changed = false;
+
+        let rows_count = self.cells.len();
+        let cols_count = self.cells[0].len();
+
+        let mut new_layout = vec![vec![State::Floor; cols_count]; rows_count];
+
+        const DELTAS: [(isize, isize); 8] = [
+            (-1, -1),
+            (-1, 0),
+            (-1, 1),
+            (0, -1),
+            (0, 1),
+            (1, -1),
+            (1, 0),
+            (1, 1),
+        ];
+
+        for row in 0..rows_count {
+            for col in 0..cols_count {
+                new_layout[row][col] = match self.cells[row][col] {
+                    State::Empty => {
+                        let all_empty = DELTAS
+                            .iter()
+                            .map(|(d_row, d_col)| self.find_first_seat(row, col, *d_row, *d_col))
+                            .all(|state| !matches!(state, Some(State::Occupied)));
+                        if all_empty {
+                            changed = true;
+                            State::Occupied
+                        } else {
+                            State::Empty
+                        }
+                    }
+                    State::Occupied => {
+                        let occupied_count = DELTAS
+                            .iter()
+                            .map(|(d_row, d_col)| self.find_first_seat(row, col, *d_row, *d_col))
+                            .filter(|state| matches!(state, Some(State::Occupied)))
+                            .count();
+
+                        if occupied_count >= 5 {
+                            changed = true;
+                            State::Empty
+                        } else {
+                            State::Occupied
+                        }
+                    }
+                    State::Floor => State::Floor,
+                }
+            }
+        }
+
+        self.cells = new_layout;
+
+        changed
+    }
+
+    fn find_first_seat(
+        &self,
+        row: usize,
+        col: usize,
+        delta_row: isize,
+        delta_col: isize,
+    ) -> Option<State> {
+        let mut row = row as isize;
+        let mut col = col as isize;
+
+        let rows_count = self.cells.len() as isize;
+        let cols_count = self.cells[0].len() as isize;
+
+        while (0..rows_count).contains(&row) && (0..cols_count).contains(&col) {
+            row += delta_row;
+            col += delta_col;
+            match self
+                .cells
+                .get(row as usize)
+                .and_then(|row_slice| row_slice.get(col as usize))
+            {
+                Some(State::Occupied) => return Some(State::Occupied),
+                Some(State::Empty) => return Some(State::Empty),
+                _ => {}
+            }
+        }
+
+        None
+    }
+
+    #[allow(dead_code)]
     fn print(&self) {
         let lines: Vec<String> = self
             .cells
@@ -126,32 +215,46 @@ impl SeatLayout {
     }
 }
 
-fn calc_occupied_when_stabilize(input: &str) -> usize {
+fn calc_occupied_surround(input: &str) -> usize {
     let mut layout = SeatLayout::from(input);
     let mut counter = 0;
-    while layout.apply_round() {
+    while layout.apply_round_surround() {
         counter += 1;
     }
 
     println!("Rounds count is {counter}");
-    println!("Last Layout:");
-    layout.print();
 
     layout.get_occupied_count()
 }
 
-fn part_1() {
-    let input = read_text_from_file("20", "11");
-    let answer = calc_occupied_when_stabilize(&input);
+fn calc_occupied_visible(input: &str) -> usize {
+    let mut layout = SeatLayout::from(input);
+    let mut counter = 0;
+    while layout.apply_round_visible() {
+        counter += 1;
+    }
+
+    println!("Rounds count is {counter}");
+
+    layout.get_occupied_count()
+}
+
+fn part_1(input: &str) {
+    let answer = calc_occupied_surround(input);
 
     println!("Part 1 answer is {answer}");
 }
 
-fn part_2() {}
+fn part_2(input: &str) {
+    let answer = calc_occupied_visible(input);
+
+    println!("Part 2 answer is {answer}");
+}
 
 pub fn run() {
-    part_1();
-    part_2();
+    let input = read_text_from_file("20", "11");
+    part_1(&input);
+    part_2(&input);
 }
 
 #[cfg(test)]
@@ -170,8 +273,8 @@ L.LLLLLL.L
 L.LLLLL.LL";
 
     #[test]
-    fn test_part_1() {
-        assert_eq!(calc_occupied_when_stabilize(INPUT), 37);
+    fn test_part() {
+        assert_eq!(calc_occupied_surround(INPUT), 37);
+        assert_eq!(calc_occupied_visible(INPUT), 26);
     }
 }
-
