@@ -23,8 +23,7 @@ class Aoc11 < AocBase
 
     def count_occupied_surround(row, col)
       count = 0
-      DIRECTIONS.each do |delta|
-        d_row, d_col = delta
+      DIRECTIONS.each do |d_row, d_col|
         curr_row = row + d_row
         curr_col = col + d_col
         # cover is better for readability but has worse performance
@@ -63,10 +62,57 @@ class Aoc11 < AocBase
             end
           end
         end
-        # puts new_row
         new_cells << new_row
       end
-      # puts new_cells
+      @cells = new_cells
+      changed
+    end
+
+    def count_occupied_vision(row, col)
+      count = 0
+      DIRECTIONS.each do |d_row, d_col|
+        curr_row = row + d_row
+        curr_col = col + d_col
+        while curr_row >= 0 && curr_row < @cells.length && curr_col >= 0 && curr_col < @cells[0].length
+          case @cells[curr_row][curr_col]
+          when '#'
+            count += 1
+            break
+          when 'L'
+            break
+          end
+          curr_row += d_row
+          curr_col += d_col
+        end
+      end
+      count
+    end
+
+    def apply_round_vision
+      changed = false
+      new_cells = []
+      @cells.each_with_index do |row, r_idx|
+        new_row = Array.new(@cells[0].length, '.')
+        row.each_with_index do |ch, c_idx|
+          case ch
+          when 'L'
+            if count_occupied_vision(r_idx, c_idx).zero?
+              changed = true
+              new_row[c_idx] = '#'
+            else
+              new_row[c_idx] = 'L'
+            end
+          when '#'
+            if count_occupied_vision(r_idx, c_idx) >= 5
+              changed = true
+              new_row[c_idx] = 'L'
+            else
+              new_row[c_idx] = '#'
+            end
+          end
+        end
+        new_cells << new_row
+      end
       @cells = new_cells
       changed
     end
@@ -80,16 +126,25 @@ class Aoc11 < AocBase
     layout.occupied_count
   end
 
+  def get_vision_count(input)
+    layout = Layout.form_string(input)
+    while layout.apply_round_vision
+    end
+
+    layout.occupied_count
+  end
+
   def part_one
     get_surround_count(@input)
   end
 
   def part_two
-    nil
+    get_vision_count(@input)
   end
 
   def do_tests
     assert_equal get_surround_count(@test_input), 37
+    assert_equal get_vision_count(@test_input), 26
     puts 'tests pass'
   end
 end
