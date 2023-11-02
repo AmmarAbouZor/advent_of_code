@@ -45,6 +45,8 @@ impl From<&str> for SeatLayout {
 }
 
 impl SeatLayout {
+    // It's easier for me the understand using indices
+    #[allow(clippy::needless_range_loop)]
     fn apply_round_surround(&mut self) -> bool {
         let mut changed = false;
 
@@ -102,6 +104,8 @@ impl SeatLayout {
         changed
     }
 
+    // It's easier for me the understand using indices
+    #[allow(clippy::needless_range_loop)]
     fn apply_round_visible(&mut self) -> bool {
         let mut changed = false;
 
