@@ -39,6 +39,17 @@ enum Command {
     Forward,
 }
 
+impl From<Direction> for Command {
+    fn from(value: Direction) -> Self {
+        match value {
+            Direction::North => Command::North,
+            Direction::East => Command::East,
+            Direction::South => Command::South,
+            Direction::West => Command::West,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 struct Instruction {
     command: Command,
@@ -100,12 +111,14 @@ impl StateDirection {
                     self.direction.turn_right();
                 }
             }
-            Command::Forward => match self.direction {
-                Direction::North => self.north += instruction.num,
-                Direction::East => self.east += instruction.num,
-                Direction::South => self.north -= instruction.num,
-                Direction::West => self.east -= instruction.num,
-            },
+            Command::Forward => {
+                let new_instruction = Instruction {
+                    command: self.direction.into(),
+                    num: instruction.num,
+                };
+
+                self.apply_command(new_instruction);
+            }
         }
     }
 
