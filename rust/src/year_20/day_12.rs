@@ -150,16 +150,10 @@ impl StateWaypoint {
             Command::South => self.waypoint_y -= instruction.num,
             Command::West => self.waypoint_x -= instruction.num,
             Command::Left => {
-                let count = instruction.num / 90;
-                for _ in 0..count {
-                    self.turn_left();
-                }
+                self.rotate(instruction.num);
             }
             Command::Right => {
-                let count = instruction.num / 90;
-                for _ in 0..count {
-                    self.turn_right();
-                }
+                self.rotate(-instruction.num);
             }
             Command::Forward => {
                 self.pos_x += self.waypoint_x * instruction.num;
@@ -168,6 +162,20 @@ impl StateWaypoint {
         }
     }
 
+    fn rotate(&mut self, degree: isize) {
+        let degree = degree as f64;
+        let degree = degree.to_radians();
+        let sin = degree.sin();
+        let cos = degree.cos();
+        let x = self.waypoint_x as f64 * cos - self.waypoint_y as f64 * sin;
+        let y = self.waypoint_x as f64 * sin + self.waypoint_y as f64 * cos;
+
+        self.waypoint_x = x.round() as isize;
+        self.waypoint_y = y.round() as isize;
+    }
+
+    #[allow(unused)]
+    // This method isn't used anymore since I can apply the rotation mathematically
     fn turn_right(&mut self) {
         match (self.waypoint_x >= 0, self.waypoint_y >= 0) {
             // 10, 1
@@ -193,6 +201,8 @@ impl StateWaypoint {
         }
     }
 
+    #[allow(unused)]
+    // This method isn't used anymore since I can apply the rotation mathematically
     fn turn_left(&mut self) {
         match (self.waypoint_x >= 0, self.waypoint_y >= 0) {
             (true, true) => {
@@ -262,4 +272,3 @@ F11";
         assert_eq!(calc_distance_waypoint(INPUT), 286);
     }
 }
-
