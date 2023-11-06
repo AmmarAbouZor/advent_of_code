@@ -79,8 +79,56 @@ class Aoc12 < AocBase
     end
   end
 
-  def calc_direction_distance(input)
-    state = StateDirection.new
+  class StateWaypoint
+    def initialize
+      @pos_x = 0
+      @pos_y = 0
+      @way_x = 10
+      @way_y = 1
+    end
+
+    def manhatten_distance
+      @pos_x.abs + @pos_y.abs
+    end
+
+    def rotate(angle_degree)
+      angle_rad = angle_degree * Math::PI / 180
+      sin = Math.sin(angle_rad)
+      cos = Math.cos(angle_rad)
+      x = @way_x * cos - @way_y * sin
+      y = @way_x * sin + @way_y * cos
+      @way_x = x.round
+      @way_y = y.round
+    end
+
+    def move_forward(num)
+      @pos_x += @way_x * num
+      @pos_y += @way_y * num
+    end
+
+    def apply_inst(inst)
+      case inst.command
+      when 'N'
+        @way_y += inst.num
+      when 'S'
+        @way_y -= inst.num
+      when 'E'
+        @way_x += inst.num
+      when 'W'
+        @way_x -= inst.num
+      when 'L'
+        rotate(inst.num)
+      when 'R'
+        rotate(-inst.num)
+      when 'F'
+        move_forward(inst.num)
+      else
+        raise "Invalid command #{inst.command}"
+      end
+    end
+  end
+
+  def calc_distance(input, state)
     input
       .lines
       .map { |line| Instruction.from_string(line) }
@@ -91,16 +139,27 @@ class Aoc12 < AocBase
     state.manhatten_distance
   end
 
+  def calc_direction_distance(input)
+    state = StateDirection.new
+    calc_distance(input, state)
+  end
+
+  def calc_waypoint_distance(input)
+    state = StateWaypoint.new
+    calc_distance(input, state)
+  end
+
   def part_one
     calc_direction_distance(@input)
   end
 
   def part_two
-    nil
+    calc_waypoint_distance(@input)
   end
 
   def do_tests
     assert_equal calc_direction_distance(@test_input), 25
+    assert_equal calc_waypoint_distance(@test_input), 286
     puts 'tests pass'
   end
 end
