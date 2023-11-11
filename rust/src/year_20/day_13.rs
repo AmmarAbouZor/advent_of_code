@@ -1,4 +1,4 @@
-use std::{cmp::Reverse, collections::BinaryHeap};
+use std::time::Instant;
 
 use crate::utls::read_text_from_file;
 
@@ -12,20 +12,25 @@ fn get_min_diff(id: usize, target: usize) -> usize {
 fn get_earliest(input: &str) -> usize {
     let (target, ids) = input.split_once('\n').unwrap();
     let target: usize = target.parse().unwrap();
-    let mut heap: BinaryHeap<_> = ids
-        .split(',')
-        .flat_map(|id| id.parse().ok())
-        .map(|id| Reverse((get_min_diff(id, target), id)))
-        .collect();
 
-    heap.pop().map(|Reverse((diff, id))| diff * id).unwrap()
+    ids.split(',')
+        .flat_map(|id| id.parse().ok())
+        .map(|id| (get_min_diff(id, target), id))
+        .min()
+        .map(|(diff, id)| diff * id)
+        .unwrap()
 }
 
 fn part_1(input: &str) {
+    let start_time = Instant::now();
     let answer_1 = get_earliest(input);
+    let end_time = Instant::now();
 
-    println!("Part 1 answer is {answer_1}");
+    let heap_time = end_time - start_time;
+    let heap_time = heap_time.as_nanos();
+    println!("Part 1 answer is {answer_1}. It took {heap_time}");
 }
+
 fn part_2(input: &str) {}
 
 pub fn run() {
@@ -46,4 +51,3 @@ mod test {
         assert_eq!(get_earliest(INPUT), 295);
     }
 }
-
