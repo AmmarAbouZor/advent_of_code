@@ -26,9 +26,9 @@ fn part_1(input: &str) {
     let answer_1 = get_earliest(input);
     let end_time = Instant::now();
 
-    let heap_time = end_time - start_time;
-    let heap_time = heap_time.as_nanos();
-    println!("Part 1 answer is {answer_1}. It took {heap_time}");
+    let exec_time = end_time - start_time;
+    let exec_time = exec_time.as_nanos();
+    println!("Part 1 answer is {answer_1}. It took {exec_time}");
 }
 
 fn part_2(input: &str) {}
