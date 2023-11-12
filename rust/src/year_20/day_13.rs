@@ -31,7 +31,35 @@ fn part_1(input: &str) {
     println!("Part 1 answer is {answer_1}. It took {exec_time}");
 }
 
-fn part_2(input: &str) {}
+// Solution is looked up online and imported from python, since it's about numbers algorithms
+fn calc_earliest_matching(input: &str) -> u128 {
+    let (_target, buses) = input.split_once('\n').unwrap();
+    let buses: Vec<(u128, u128)> = buses
+        .trim()
+        .split(',')
+        .enumerate()
+        .filter_map(|(idx, num)| num.parse().ok().map(|num| ((idx as u128), num)))
+        .collect();
+
+    let mut lcm = 1;
+    let mut time = 0;
+    for i in 0..buses.len() - 1 {
+        let bus = buses[i + 1].1;
+        let idx = buses[i + 1].0;
+        lcm *= buses[i].1;
+        while (time + idx) % bus != 0 {
+            time += lcm;
+        }
+    }
+
+    time
+}
+
+fn part_2(input: &str) {
+    let answer_2 = calc_earliest_matching(input);
+
+    println!("Part 2 answer is {answer_2}");
+}
 
 pub fn run() {
     let input = read_text_from_file("20", "13");
@@ -47,7 +75,18 @@ mod test {
 7,13,x,x,59,x,31,19";
 
     #[test]
-    fn test_part_1() {
+    fn test_part() {
         assert_eq!(get_earliest(INPUT), 295);
+        let test_records = [
+            (INPUT, 1068781),
+            ("1\n17,x,13,19", 3417),
+            ("1\n67,7,59,61", 754018),
+            ("1\n67,x,7,59,61", 779210),
+            ("1\n67,7,x,59,61", 1261476),
+            ("1\n1789,37,47,1889", 1202161486),
+        ];
+        for (input, result) in test_records {
+            assert_eq!(calc_earliest_matching(input), result);
+        }
     }
 }
