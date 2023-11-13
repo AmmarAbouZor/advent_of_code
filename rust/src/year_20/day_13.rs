@@ -13,7 +13,8 @@ fn get_earliest(input: &str) -> usize {
     let (target, ids) = input.split_once('\n').unwrap();
     let target: usize = target.parse().unwrap();
 
-    ids.split(',')
+    ids.trim()
+        .split(',')
         .flat_map(|id| id.parse().ok())
         .map(|id| (get_min_diff(id, target), id))
         .min()
