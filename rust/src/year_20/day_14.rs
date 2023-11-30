@@ -28,28 +28,19 @@ impl TryFrom<&str> for Operation {
 impl Operation {
     fn apply_address(&self, mask: &str, memory_map: &mut BTreeMap<usize, usize>) {
         let mask = mask.as_bytes();
-        let address_binary_text = format!("{:b}", self.address);
+        let address_binary_text = format!("{:036b}", self.address);
         let address_binary_text = address_binary_text.as_bytes();
 
         let result_binary_text: Vec<_> = address_binary_text
             .iter()
-            .rev()
             .enumerate()
-            .map(|(idx, char)| match mask.iter().rev().nth(idx).unwrap() {
+            .map(|(idx, char)| match mask[idx] {
                 b'0' => *char,
                 b'1' => b'1',
                 b'X' => b'X',
-                invalide => unreachable!("Value is invalide {invalide}"),
+                invalid => unreachable!("Value is invalid {invalid}"),
             })
-            .rev()
             .collect();
-
-        // Debug code
-        result_binary_text
-            .iter()
-            .for_each(|ch| print!("{}", *ch as char));
-        println!();
-        // End debug code
 
         let mut combinations = Vec::new();
         Self::get_all_combinations(result_binary_text, 0, &mut combinations);
