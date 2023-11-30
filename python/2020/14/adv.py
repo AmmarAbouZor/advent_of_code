@@ -27,6 +27,15 @@ class Program:
     def __repr__(self) -> str:
         return f"mask: {self.mask}, operations: {self.operations}"
 
+    def apply_value(self, memory_map: dict[int, int]):
+        and_mask = int(self.mask.replace("X", "1"), 2)
+        or_mask = int(self.mask.replace("X", "0"), 2)
+
+        for operation in self.operations:
+            and_val = operation.value & and_mask
+            full_val = and_val | or_mask
+            memory_map[operation.address] = full_val
+
 
 def parse_input(input: str) -> list[Program]:
     programs: list[Program] = []
@@ -41,10 +50,13 @@ def parse_input(input: str) -> list[Program]:
     return programs
 
 
-def calc_sum(input: str) -> int:
+def calc_sum_mask_value(input: str) -> int:
     programs = parse_input(input)
-    print(programs)
-    return -1
+    memory_map: dict[int, int] = {}
+    for program in programs:
+        program.apply_value(memory_map)
+
+    return sum(memory_map.values())
 
 
 def get_input() -> str:
@@ -58,7 +70,8 @@ def get_test_input() -> str:
 
 
 def part_1(input: str):
-    pass
+    answer_1 = calc_sum_mask_value(input)
+    print(f"Part 1 answer is {answer_1}")
 
 
 def part_2(input: str):
@@ -67,7 +80,7 @@ def part_2(input: str):
 
 def run_test():
     input = get_test_input()
-    answer_1 = calc_sum(input)
+    answer_1 = calc_sum_mask_value(input)
     assert answer_1 == 165, f"Expected: '{165}', Found: '{answer_1}'"
     answer_2 = 0
     assert answer_2 == 0, f"Expected: '{0}', Found: '{answer_2}'"
