@@ -36,8 +36,7 @@ fn read_input() -> Vec<Tile> {
 }
 
 fn calc_next_row(cur_row: &[Tile]) -> Vec<Tile> {
-    let mut row = Vec::new();
-    row.reserve(cur_row.len());
+    let mut row = Vec::with_capacity(cur_row.len());
 
     row.push(Tile::from_prev(Tile::Safe, cur_row[0], cur_row[1]));
     for i in 1..cur_row.len() - 1 {
