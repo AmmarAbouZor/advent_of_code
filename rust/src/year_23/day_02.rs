@@ -62,6 +62,23 @@ impl Game {
     fn is_valid(&self) -> bool {
         self.sets.iter().flatten().all(CubesEntry::is_valid)
     }
+
+    fn calc_power(&self) -> usize {
+        let mut max_green = 0;
+        let mut max_red = 0;
+        let mut max_blue = 0;
+
+        self.sets
+            .iter()
+            .flatten()
+            .for_each(|entry| match entry.color {
+                Color::Blue => max_blue = max_blue.max(entry.count),
+                Color::Red => max_red = max_red.max(entry.count),
+                Color::Green => max_green = max_green.max(entry.count),
+            });
+
+        max_green * max_red * max_blue
+    }
 }
 
 fn calc_sum_valid(input: &str) -> usize {
@@ -73,13 +90,25 @@ fn calc_sum_valid(input: &str) -> usize {
         .sum()
 }
 
+fn calc_min_power(input: &str) -> usize {
+    input
+        .lines()
+        .map(Game::from)
+        .map(|game| game.calc_power())
+        .sum()
+}
+
 fn part_1(input: &str) {
     let answer_1 = calc_sum_valid(input);
 
     println!("Part 1 answer is {answer_1}");
 }
 
-fn part_2(input: &str) {}
+fn part_2(input: &str) {
+    let answer_2 = calc_min_power(input);
+
+    println!("Part 2 answer is {answer_2}");
+}
 
 pub fn run() {
     let input = read_text_from_file("23", "02");
@@ -100,6 +129,7 @@ Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green";
     #[test]
     fn test_solution() {
         assert_eq!(calc_sum_valid(INPUT), 8);
+        assert_eq!(calc_min_power(INPUT), 2286);
     }
 }
 
