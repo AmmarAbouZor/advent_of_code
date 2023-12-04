@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use crate::utls::read_text_from_file;
 
 #[derive(Debug)]
@@ -25,16 +27,19 @@ impl From<&str> for Card {
 
 impl Card {
     fn calc_score(&self) -> usize {
-        let winner_nums = self
-            .nums
-            .iter()
-            .filter(|num| self.winners.contains(num))
-            .count();
+        let winner_nums = self.get_matching_count();
         if winner_nums > 0 {
             (0..winner_nums - 1).fold(1, |acc, _| acc * 2)
         } else {
             0
         }
+    }
+
+    fn get_matching_count(&self) -> usize {
+        self.nums
+            .iter()
+            .filter(|num| self.winners.contains(num))
+            .count()
     }
 }
 
@@ -46,13 +51,43 @@ fn calc_total_score(input: &str) -> usize {
         .sum()
 }
 
+fn calc_score_copies(input: &str) -> usize {
+    let mut copies_map = BTreeMap::new();
+    copies_map.insert(1, 0);
+    let answer = input
+        .lines()
+        .map(Card::from)
+        .enumerate()
+        .map(|(idx, card)| {
+            let id = idx + 1;
+            let copies = *copies_map.get(&id).unwrap_or(&0) + 1;
+            let score = card.get_matching_count();
+
+            for i in 0..score {
+                let id_to_copy = i + id + 1;
+                copies_map
+                    .entry(id_to_copy)
+                    .and_modify(|count| *count += copies)
+                    .or_insert(copies);
+            }
+            copies
+        })
+        .sum();
+
+    answer
+}
+
 fn part_1(input: &str) {
     let answer_1 = calc_total_score(input);
 
     println!("Part 1 answer is {answer_1}");
 }
 
-fn part_2(input: &str) {}
+fn part_2(input: &str) {
+    let answer_2 = calc_score_copies(input);
+
+    println!("Part 2 answer is {answer_2}");
+}
 
 pub fn run() {
     let input = read_text_from_file("23", "04");
@@ -73,7 +108,8 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11";
 
     #[test]
     fn test_solution() {
-        assert_eq!(calc_total_score(INPUT), 13)
+        assert_eq!(calc_total_score(INPUT), 13);
+        assert_eq!(calc_score_copies(INPUT), 30);
     }
 }
 
