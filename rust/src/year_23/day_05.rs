@@ -1,19 +1,6 @@
-use std::{isize, ops::RangeInclusive};
+use std::ops::RangeInclusive;
 
 use crate::utls::read_text_from_file;
-
-#[derive(Debug, Clone, Copy)]
-enum Maps {
-    SeedSoil,
-    SoilFert,
-    FertWater,
-    WaterLight,
-    LightTemp,
-    TempHumi,
-    HumiLocation,
-}
-
-const MAPS_LENGTH: usize = Maps::HumiLocation as usize + 1;
 
 #[derive(Debug)]
 struct RangeDiff {
@@ -91,11 +78,94 @@ impl Almanac {
             .min()
             .unwrap()
     }
+
+    fn generate_ranges(&self) -> Vec<RangeInclusive<isize>> {
+        self.seeds.chunks(2).fold(Vec::new(), |mut ranges, rng| {
+            ranges.push(rng[0]..=rng[0] + rng[1] - 1);
+            ranges
+        })
+    }
+
+    fn find_min_location_ranges(&self) -> isize {
+        let start_ranges = self.generate_ranges();
+
+        let final_ranges = self.maps.iter().fold(start_ranges, |ranges, map| {
+            ranges
+                .into_iter()
+                .flat_map(|rng| self.solve_ranges(map, rng))
+                .collect()
+        });
+
+        final_ranges.iter().map(|rng| *rng.start()).min().unwrap()
+    }
+
+    fn solve_ranges(
+        &self,
+        rng_diffs: &[RangeDiff],
+        rng: RangeInclusive<isize>,
+    ) -> Vec<RangeInclusive<isize>> {
+        let mut ranges = Vec::new();
+
+        // This will be used to find out which chunks of the range aren't mapped
+        let mut temp_ranges = Vec::new();
+
+        for rng_diff in rng_diffs {
+            let src_rng = &rng_diff.src_rng;
+            match (src_rng.contains(rng.start()), src_rng.contains(rng.end())) {
+                // Inside
+                (true, true) => {
+                    ranges.push(*rng.start() + rng_diff.diff..=*rng.end() + rng_diff.diff);
+                    temp_ranges.push(*rng.start()..=*rng.end());
+                }
+                // Start inside. End outside
+                (true, false) => {
+                    ranges.push(*rng.start() + rng_diff.diff..=*src_rng.end() + rng_diff.diff);
+                    temp_ranges.push(*rng.start()..=*src_rng.end());
+                }
+                // Start outside. End inside
+                (false, true) => {
+                    ranges.push(*src_rng.start() + rng_diff.diff..=*rng.end() + rng_diff.diff);
+                    temp_ranges.push(*src_rng.start()..=*rng.end());
+                }
+                (false, false) => {
+                    let overlapp = rng.start() < src_rng.start() && rng.end() > src_rng.end();
+                    if overlapp {
+                        ranges.push(
+                            *src_rng.start() + rng_diff.diff..=*src_rng.end() + rng_diff.diff,
+                        );
+                        temp_ranges.push(*src_rng.start()..=*src_rng.end());
+                    }
+                }
+            }
+        }
+
+        // Fill out the unmapped chunks
+        temp_ranges.sort_unstable_by_key(|rng| *rng.start());
+
+        if ranges.is_empty() {
+            ranges.push(rng.clone());
+        } else {
+            let mut bound_to_check = *rng.start();
+            for tmp_rng in temp_ranges {
+                if bound_to_check < *tmp_rng.start() {
+                    ranges.push(bound_to_check..=*tmp_rng.start() - 1);
+                }
+                bound_to_check = *tmp_rng.end();
+            }
+        }
+
+        ranges
+    }
 }
 
 fn find_lowes(input: &str) -> isize {
     let almanac = Almanac::from(input);
     almanac.find_min_location()
+}
+
+fn find_lowes_ranges(input: &str) -> isize {
+    let almanac = Almanac::from(input);
+    almanac.find_min_location_ranges()
 }
 
 fn part_1(input: &str) {
@@ -104,7 +174,11 @@ fn part_1(input: &str) {
     println!("Part 1 answer is {answer_1}");
 }
 
-fn part_2(input: &str) {}
+fn part_2(input: &str) {
+    let answer_2 = find_lowes_ranges(input);
+
+    println!("Part 2 answer is {answer_2}");
+}
 
 pub fn run() {
     let input = read_text_from_file("23", "05");
@@ -153,6 +227,6 @@ humidity-to-location map:
     #[test]
     fn test_solution() {
         assert_eq!(find_lowes(INPUT), 35);
+        assert_eq!(find_lowes_ranges(INPUT), 46);
     }
 }
-
