@@ -1,8 +1,7 @@
 use crate::utls::read_text_from_file;
 
-fn calc_extrapolated(nums: Vec<isize>) -> isize {
+fn fill_levels(nums: Vec<isize>) -> Vec<Vec<isize>> {
     let mut levels = vec![nums];
-    // Fill the levels
     let mut last_level = levels.last().unwrap();
     while last_level.iter().any(|num| *num != 0) {
         let new_level: Vec<isize> = last_level
@@ -13,7 +12,12 @@ fn calc_extrapolated(nums: Vec<isize>) -> isize {
         last_level = levels.last().unwrap();
     }
 
-    // Calc the extrapolated valud
+    levels
+}
+
+fn calc_extrapolated(nums: Vec<isize>) -> isize {
+    let levels = fill_levels(nums);
+
     levels
         .iter()
         .rev()
@@ -21,7 +25,20 @@ fn calc_extrapolated(nums: Vec<isize>) -> isize {
         .fold(0, |extrap, level| extrap + *level.last().unwrap())
 }
 
-fn calc_sum(input: &str) -> isize {
+fn calc_extra_revers(nums: Vec<isize>) -> isize {
+    let levels = fill_levels(nums);
+
+    levels
+        .iter()
+        .rev()
+        .skip(1)
+        .fold(0, |extrap, level| *level.first().unwrap() - extrap)
+}
+
+fn calc_sum<F>(input: &str, calc_func: F) -> isize
+where
+    F: FnMut(Vec<isize>) -> isize,
+{
     input
         .lines()
         .map(|line| {
@@ -29,17 +46,21 @@ fn calc_sum(input: &str) -> isize {
                 .map(|num| num.parse().unwrap())
                 .collect::<Vec<isize>>()
         })
-        .map(calc_extrapolated)
+        .map(calc_func)
         .sum()
 }
 
 fn part_1(input: &str) {
-    let ansewr = calc_sum(input);
+    let answer = calc_sum(input, calc_extrapolated);
 
-    println!("Part 1 answer is {ansewr}");
+    println!("Part 1 answer is {answer}");
 }
 
-fn part_2(input: &str) {}
+fn part_2(input: &str) {
+    let answer = calc_sum(input, calc_extra_revers);
+
+    println!("Part 2 answer is {answer}");
+}
 
 pub fn run() {
     let input = read_text_from_file("23", "09");
@@ -57,7 +78,8 @@ mod test {
 
     #[test]
     fn test_solution() {
-        assert_eq!(calc_sum(INPUT), 114);
+        assert_eq!(calc_sum(INPUT, calc_extrapolated), 114);
+        assert_eq!(calc_sum(INPUT, calc_extra_revers), 2);
     }
 }
 
