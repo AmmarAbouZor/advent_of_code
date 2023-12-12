@@ -1,3 +1,5 @@
+use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
+
 use crate::utls::read_text_from_file;
 
 #[derive(Debug, Copy, Clone)]
@@ -35,14 +37,58 @@ impl From<&str> for Record {
 }
 
 impl Record {
-    fn get_arrangements(&self) -> usize {
-        Self::get_possibilites(&self.states)
-            .iter()
-            .map(|states| Self::get_groups(states))
-            .filter(|arr| self.records == *arr)
-            .count()
+    fn expand(&mut self) {
+        self.states.push(State::Unknown);
+        let mut expaned_state = Vec::with_capacity(self.states.len() * 5);
+        let mut expand_records = Vec::with_capacity(self.records.len() * 5);
+        for _ in 0..5 {
+            expaned_state.extend(self.states.iter());
+            expand_records.extend(self.records.iter());
+        }
+        self.states = expaned_state;
+        self.records = expand_records;
     }
 
+    fn get_arrangements(&self) -> usize {
+        // I kept this for reference only as I went with the recursion solution with parallelism
+        // Self::get_possibilites(&self.states)
+        //     .iter()
+        //     .map(|states| Self::get_groups(states))
+        //     .filter(|arr| self.records == *arr)
+        //     .count()
+
+        let mut count = 0;
+        let states = Vec::new();
+        self.solve_rec(0, states, &mut count);
+
+        count
+    }
+
+    fn solve_rec(&self, idx: usize, mut states: Vec<State>, count: &mut usize) {
+        if idx == self.states.len() {
+            if *Self::get_groups(&states) == self.records {
+                *count += 1;
+            }
+            return;
+        }
+
+        match self.states[idx] {
+            valid_state @ (State::Operational | State::Damaged) => {
+                states.push(valid_state);
+                self.solve_rec(idx + 1, states, count);
+            }
+            State::Unknown => {
+                let mut clone = states.clone();
+                clone.push(State::Operational);
+                self.solve_rec(idx + 1, clone, count);
+                states.push(State::Damaged);
+                self.solve_rec(idx + 1, states, count);
+            }
+        }
+    }
+
+    // I kept this for reference only as I went with the recursion solution with parallelism
+    #[allow(unused)]
     fn get_possibilites(unsolved_states: &[State]) -> Vec<Vec<State>> {
         let mut posses = vec![Vec::new()];
 
@@ -95,9 +141,25 @@ impl Record {
 }
 
 fn calc_arr_sum(input: &str) -> usize {
-    input
+    let maps: Vec<_> = input.lines().map(Record::from).collect();
+
+    maps.par_iter()
+        .map(|record| record.get_arrangements())
+        .sum()
+}
+
+fn calc_expand_sum(input: &str) -> usize {
+    // This can't work it need a dynamic programming solution
+    let maps: Vec<_> = input
         .lines()
         .map(Record::from)
+        .map(|mut record| {
+            record.expand();
+            record
+        })
+        .collect();
+
+    maps.par_iter()
         .map(|record| record.get_arrangements())
         .sum()
 }
@@ -108,7 +170,11 @@ fn part_1(input: &str) {
     println!("Part 1 asnwer is {answer}");
 }
 
-fn part_2(input: &str) {}
+fn part_2(input: &str) {
+    let answer = calc_expand_sum(input);
+
+    println!("Part 2 answer is {answer}");
+}
 
 pub fn run() {
     let input = read_text_from_file("23", "12");
@@ -130,6 +196,7 @@ mod test {
     #[test]
     fn test_solution() {
         assert_eq!(calc_arr_sum(INPUT), 21);
+        assert_eq!(calc_expand_sum(INPUT), 525152);
     }
 }
 
