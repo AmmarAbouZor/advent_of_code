@@ -2,7 +2,7 @@ use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 
 use crate::utls::read_text_from_file;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum State {
     Operational,
     Damaged,
@@ -23,7 +23,7 @@ impl From<char> for State {
 #[derive(Debug)]
 struct Record {
     states: Vec<State>,
-    records: Vec<u8>,
+    records: Vec<usize>,
 }
 
 impl From<&str> for Record {
@@ -39,14 +39,10 @@ impl From<&str> for Record {
 impl Record {
     fn expand(&mut self) {
         self.states.push(State::Unknown);
-        let mut expaned_state = Vec::with_capacity(self.states.len() * 5);
-        let mut expand_records = Vec::with_capacity(self.records.len() * 5);
-        for _ in 0..5 {
-            expaned_state.extend(self.states.iter());
-            expand_records.extend(self.records.iter());
-        }
-        self.states = expaned_state;
-        self.records = expand_records;
+        self.states = self.states.repeat(5);
+        _ = self.states.pop().unwrap();
+
+        self.records = self.records.repeat(5);
     }
 
     fn get_arrangements(&self) -> usize {
@@ -117,7 +113,7 @@ impl Record {
         posses
     }
 
-    fn get_groups(states: &[State]) -> Vec<u8> {
+    fn get_groups(states: &[State]) -> Vec<usize> {
         let mut groups = vec![0];
 
         for state in states {
@@ -138,6 +134,45 @@ impl Record {
 
         groups
     }
+
+    fn count_arrang_dp(&self) -> usize {
+        let n = self.states.len();
+        let m = self.records.len();
+        let mut dp = vec![vec![vec![0; n + 1]; m + 1]; n + 1];
+
+        dp[n][m][0] = 1;
+        dp[n][m - 1][self.records[m - 1]] = 1;
+
+        for state_pos in (0..n).rev() {
+            for (rec_idx, &rec_count) in self.records.iter().enumerate() {
+                for count in 0..=rec_count {
+                    for state in [State::Operational, State::Damaged] {
+                        if self.states[state_pos] == state
+                            || self.states[state_pos] == State::Unknown
+                        {
+                            if state == State::Operational && count == 0 {
+                                dp[state_pos][rec_idx][count] += dp[state_pos + 1][rec_idx][0];
+                            } else if state == State::Operational
+                                && rec_idx < m
+                                && self.records[rec_idx] == count
+                            {
+                                dp[state_pos][rec_idx][count] += dp[state_pos + 1][rec_idx + 1][0];
+                            } else if state == State::Damaged {
+                                dp[state_pos][rec_idx][count] +=
+                                    dp[state_pos + 1][rec_idx][count + 1];
+                            }
+                        }
+                    }
+                }
+            }
+
+            if matches!(self.states[state_pos], State::Operational | State::Unknown) {
+                dp[state_pos][m][0] += dp[state_pos + 1][m][0];
+            }
+        }
+
+        dp[0][0][0]
+    }
 }
 
 fn calc_arr_sum(input: &str) -> usize {
@@ -149,7 +184,6 @@ fn calc_arr_sum(input: &str) -> usize {
 }
 
 fn calc_expand_sum(input: &str) -> usize {
-    // This can't work it need a dynamic programming solution
     let maps: Vec<_> = input
         .lines()
         .map(Record::from)
@@ -159,9 +193,7 @@ fn calc_expand_sum(input: &str) -> usize {
         })
         .collect();
 
-    maps.par_iter()
-        .map(|record| record.get_arrangements())
-        .sum()
+    maps.par_iter().map(|record| record.count_arrang_dp()).sum()
 }
 
 fn part_1(input: &str) {
