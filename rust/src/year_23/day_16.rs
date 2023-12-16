@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
+
 use crate::utls::read_text_from_file;
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
@@ -81,7 +83,11 @@ fn energized_sum(input: &str) -> usize {
         _ => Dir::East,
     };
 
-    let mut states = vec![State::new(Point::new(0, 0), first_dir)];
+    calc_run(&grid, State::new(Point::new(0, 0), first_dir))
+}
+
+fn calc_run(grid: &[&[u8]], start: State) -> usize {
+    let mut states = vec![start];
 
     let mut visited_pos = HashSet::new();
     let mut visited_state = HashSet::new();
@@ -98,13 +104,46 @@ fn energized_sum(input: &str) -> usize {
     visited_pos.len()
 }
 
+fn get_all_possible_starts(grid: &[&[u8]]) -> Vec<State> {
+    let height = grid.len();
+    let width = grid[0].len();
+    let mut states = Vec::with_capacity(height * 2 + width * 2);
+
+    for row in 0..height {
+        states.push(State::new(Point::new(row, 0), Dir::East));
+        states.push(State::new(Point::new(row, width - 1), Dir::West));
+    }
+
+    for col in 0..width {
+        states.push(State::new(Point::new(0, col), Dir::South));
+        states.push(State::new(Point::new(height - 1, col), Dir::North));
+    }
+
+    states
+}
+
+fn get_max_energized(input: &str) -> usize {
+    let grid: Vec<_> = input.lines().map(|line| line.as_bytes()).collect();
+    let starts = get_all_possible_starts(&grid);
+
+    starts
+        .par_iter()
+        .map(|&start| calc_run(&grid, start))
+        .max()
+        .unwrap()
+}
+
 fn part_1(input: &str) {
     let answer = energized_sum(input);
 
     println!("Part 1 answer is {answer}");
 }
 
-fn part_2(input: &str) {}
+fn part_2(input: &str) {
+    let answer = get_max_energized(input);
+
+    println!("Part 2 answer is {answer}");
+}
 
 pub fn run() {
     let input = read_text_from_file("23", "16");
@@ -130,6 +169,7 @@ mod test {
     #[test]
     fn test_solution() {
         assert_eq!(energized_sum(INPUT), 46);
+        assert_eq!(get_max_energized(INPUT), 51);
     }
 }
 
