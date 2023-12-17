@@ -41,41 +41,47 @@ impl State {
         }
     }
 
-    fn get_next_dirs(&self) -> Vec<(Dir, u8)> {
-        match (self.dir, self.stright_steps) {
-            (Dir::North, 1..=2) => vec![
+    fn get_next_dirs(&self, min: u8, max: u8) -> Vec<(Dir, u8)> {
+        let steps = self.stright_steps;
+
+        if steps < min {
+            return vec![(self.dir, self.stright_steps + 1)];
+        }
+
+        match self.dir {
+            Dir::North if steps < max => vec![
                 (Dir::North, self.stright_steps + 1),
                 (Dir::East, 1),
                 (Dir::West, 1),
             ],
-            (Dir::North, _) => vec![(Dir::East, 1), (Dir::West, 1)],
+            Dir::North => vec![(Dir::East, 1), (Dir::West, 1)],
 
-            (Dir::East, 1..=2) => vec![
+            Dir::East if steps < max => vec![
                 (Dir::East, self.stright_steps + 1),
                 (Dir::North, 1),
                 (Dir::South, 1),
             ],
-            (Dir::East, _) => vec![(Dir::North, 1), (Dir::South, 1)],
+            Dir::East => vec![(Dir::North, 1), (Dir::South, 1)],
 
-            (Dir::South, 1..=2) => vec![
+            Dir::South if steps < max => vec![
                 (Dir::South, self.stright_steps + 1),
                 (Dir::East, 1),
                 (Dir::West, 1),
             ],
-            (Dir::South, _) => vec![(Dir::East, 1), (Dir::West, 1)],
+            Dir::South => vec![(Dir::East, 1), (Dir::West, 1)],
 
-            (Dir::West, 1..=2) => vec![
+            Dir::West if steps < max => vec![
                 (Dir::West, self.stright_steps + 1),
                 (Dir::North, 1),
                 (Dir::South, 1),
             ],
-            (Dir::West, _) => vec![(Dir::North, 1), (Dir::South, 1)],
+            Dir::West => vec![(Dir::North, 1), (Dir::South, 1)],
         }
     }
 
     // States isn't checked if the grid contains them
-    fn get_next_states(&self) -> Vec<State> {
-        let dirs = self.get_next_dirs();
+    fn get_next_states(&self, min: u8, max: u8) -> Vec<State> {
+        let dirs = self.get_next_dirs(min, max);
         dirs.into_iter()
             .map(|(dir, steps)| {
                 let next_pos = match dir {
@@ -102,18 +108,22 @@ fn parse_input(input: &str) -> Vec<Vec<usize>> {
         .collect()
 }
 
-fn calc_min_heat(input: &str) -> usize {
+fn calc_min_heat(input: &str, min: u8, max: u8) -> usize {
     let grid = parse_input(input);
 
     let mut states_map: HashMap<State, usize> = HashMap::new();
 
-    let start = State::new(Point::new(0, 0), Dir::East, 0);
-
-    states_map.insert(start.clone(), 0);
+    let starts = vec![
+        State::new(Point::new(0, 0), Dir::East, 0),
+        State::new(Point::new(0, 0), Dir::South, 0),
+    ];
 
     let mut queue = BinaryHeap::new();
 
-    queue.push((Reverse(0_usize), start));
+    for start in starts {
+        states_map.insert(start.clone(), 0);
+        queue.push((Reverse(0_usize), start));
+    }
 
     let mut visited = HashSet::new();
 
@@ -121,7 +131,7 @@ fn calc_min_heat(input: &str) -> usize {
         if !visited.insert(curr_s.clone()) {
             continue;
         }
-        let next_states = curr_s.get_next_states();
+        let next_states = curr_s.get_next_states(min, max);
 
         for next_s in next_states {
             if let Some(&heat) = grid
@@ -144,19 +154,27 @@ fn calc_min_heat(input: &str) -> usize {
 
     states_map
         .into_iter()
-        .filter(|(state, _)| state.pos.row == grid.len() - 1 && state.pos.col == grid[0].len() - 1)
+        .filter(|(state, _)| {
+            state.pos.row == grid.len() - 1
+                && state.pos.col == grid[0].len() - 1
+                && state.stright_steps >= min
+        })
         .map(|(_, heat)| heat)
         .min()
         .unwrap()
 }
 
 fn part_1(input: &str) {
-    let answer = calc_min_heat(input);
+    let answer = calc_min_heat(input, 0, 3);
 
     println!("Part 1 answer is {answer}");
 }
 
-fn part_2(input: &str) {}
+fn part_2(input: &str) {
+    let answer = calc_min_heat(input, 4, 10);
+
+    println!("Part 2 answer is {answer}");
+}
 
 pub fn run() {
     let input = read_text_from_file("23", "17");
@@ -182,9 +200,17 @@ mod test {
 2546548887735
 4322674655533";
 
+    const INPUT_2: &str = "111111111111
+999999999991
+999999999991
+999999999991
+999999999991";
+
     #[test]
     fn test_solution() {
-        assert_eq!(calc_min_heat(INPUT), 102);
+        assert_eq!(calc_min_heat(INPUT, 0, 3), 102);
+        assert_eq!(calc_min_heat(INPUT, 4, 10), 94);
+        assert_eq!(calc_min_heat(INPUT_2, 4, 10), 71);
     }
 }
 

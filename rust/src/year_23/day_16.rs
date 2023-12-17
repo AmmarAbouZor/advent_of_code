@@ -94,7 +94,7 @@ fn calc_run(grid: &[&[u8]], start: State) -> usize {
 
     while let Some(state) = states.pop() {
         visited_pos.insert(state.pos);
-        state.do_move(&grid).into_iter().for_each(|s| {
+        state.do_move(grid).into_iter().for_each(|s| {
             if visited_state.insert(s) {
                 states.push(s);
             }
@@ -172,4 +172,3 @@ mod test {
         assert_eq!(get_max_energized(INPUT), 51);
     }
 }
-
