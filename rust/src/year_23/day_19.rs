@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 
 use crate::utls::read_text_from_file;
 
@@ -93,7 +93,7 @@ fn parse_workflows(text: &str) -> HashMap<&str, Vec<Condition<'_>>> {
                 .split(',')
                 .map(|cond| {
                     if let Some((rule, inst)) = cond.split_once(':') {
-                        let categorie = match rule.as_bytes()[0] {
+                        let category = match rule.as_bytes()[0] {
                             b'x' => Category::X,
                             b'm' => Category::M,
                             b'a' => Category::A,
@@ -104,8 +104,8 @@ fn parse_workflows(text: &str) -> HashMap<&str, Vec<Condition<'_>>> {
                         let num = rule[2..].parse().unwrap();
 
                         let r = match rule.as_bytes()[1] {
-                            b'>' => Rule::GreaterThan(categorie, num),
-                            b'<' => Rule::SmallerThan(categorie, num),
+                            b'>' => Rule::GreaterThan(category, num),
+                            b'<' => Rule::SmallerThan(category, num),
                             _ => unreachable!(),
                         };
 
@@ -148,14 +148,77 @@ fn get_accepted_sum(input: &str) -> usize {
     accepted_sum
 }
 
+// Get combinations sum using ranges calculations
+fn get_combinations(input: &str) -> usize {
+    let (workflows, _) = input.split_once("\n\n").unwrap();
+    let workflows_map = parse_workflows(workflows);
+
+    let start_ranges = vec![1..=4000; 4];
+
+    let mut queue = VecDeque::new();
+    queue.push_back((Inst::GoTo("in"), start_ranges));
+
+    let mut accepted_ranges = Vec::new();
+
+    while let Some((inst, mut ranges)) = queue.pop_front() {
+        let inst_address = match inst {
+            Inst::GoTo(address) => address,
+            Inst::Accepted => {
+                accepted_ranges.push(ranges);
+                continue;
+            }
+            Inst::Rejected => continue,
+        };
+
+        let conditions = workflows_map.get(inst_address).unwrap();
+
+        for cond in conditions.iter() {
+            match cond.rule {
+                Rule::None => {
+                    queue.push_back((cond.inst.clone(), ranges));
+                    break;
+                }
+                Rule::SmallerThan(cat, val) => {
+                    let mut rng_clone = ranges.clone();
+                    let cat_idx = cat as usize;
+
+                    rng_clone[cat_idx] =
+                        *rng_clone[cat_idx].start()..=(*rng_clone[cat_idx].end().min(&val) - 1);
+                    queue.push_back((cond.inst.clone(), rng_clone));
+
+                    ranges[cat_idx] = *ranges[cat_idx].start().max(&val)..=*ranges[cat_idx].end();
+                }
+                Rule::GreaterThan(cat, val) => {
+                    let mut rng_clone = ranges.clone();
+                    let cat_idx = cat as usize;
+
+                    rng_clone[cat_idx] =
+                        (*rng_clone[cat_idx].start().max(&val) + 1)..=*rng_clone[cat_idx].end();
+                    queue.push_back((cond.inst.clone(), rng_clone));
+
+                    ranges[cat_idx] = *ranges[cat_idx].start()..=*ranges[cat_idx].end().min(&val);
+                }
+            }
+        }
+    }
+
+    accepted_ranges
+        .into_iter()
+        .map(|parts| parts.into_iter().map(|rng| rng.count()).product::<usize>())
+        .sum()
+}
+
 fn part_1(input: &str) {
     let answer = get_accepted_sum(input);
 
     println!("Part 1 answer is {answer}");
 }
 
-#[allow(unused)]
-fn part_2(input: &str) {}
+fn part_2(input: &str) {
+    let answer = get_combinations(input);
+
+    println!("Part 2 answer is {answer}")
+}
 
 pub fn run() {
     let input = read_text_from_file("23", "19");
@@ -188,6 +251,7 @@ hdj{m>838:A,pv}
     #[test]
     fn test_solution() {
         assert_eq!(get_accepted_sum(INPUT), 19114);
+        assert_eq!(get_combinations(INPUT), 167409079868000);
     }
 }
 
