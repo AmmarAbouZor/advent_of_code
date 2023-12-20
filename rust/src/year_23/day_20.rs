@@ -1,6 +1,4 @@
-use crate::{utls::read_text_from_file, year_23::day_20::copied::solve_part_2};
-
-mod copied;
+use crate::utls::read_text_from_file;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Pulse {
@@ -216,6 +214,76 @@ impl Machine {
                 });
         summed.0 * summed.1
     }
+
+    fn apply_round_min(&mut self) -> bool {
+        let mut broadcaster = self
+            .modules
+            .iter()
+            .find(|m| matches!(m.module_type, ModuleType::BroadCast))
+            .unwrap()
+            .clone();
+
+        // input doesn't matter for broadcaster
+        let mut pulses = broadcaster.apply("", Pulse::Low).clone();
+
+        let mut found = false;
+        while !pulses.is_empty() {
+            // dn is the last conjunction before rx
+            if pulses
+                .iter()
+                .any(|p| matches!(p.pulse, Pulse::High) && matches!(p.target, "dn"))
+            {
+                found = true;
+            }
+            let new_pulses = pulses
+                .iter()
+                .flat_map(|state| {
+                    self.modules
+                        .iter_mut()
+                        .find(|m| m.name == state.target)
+                        .map_or_else(Vec::new, |module| module.apply(state.sender, state.pulse))
+                })
+                .collect();
+
+            pulses = new_pulses;
+        }
+
+        found
+    }
+
+    fn apply_min(&mut self) -> usize {
+        // TODO: Read the following article
+        // https://www.electronics-tutorials.ws/counter/mod-counters.html
+
+        self.fill_conj_initial();
+
+        let mut counts = Vec::new();
+
+        for i in 0..4096 {
+            if self.apply_round_min() {
+                counts.push(i + 1);
+            }
+        }
+
+        lcm(&counts)
+    }
+}
+
+/// calculates Lowest Common Multiple of a group on numbers
+pub fn lcm(nums: &[usize]) -> usize {
+    if nums.len() == 1 {
+        return nums[0];
+    }
+    let a = nums[0];
+    let b = lcm(&nums[1..]);
+    a * b / gcd_of_two_numbers(a, b)
+}
+
+fn gcd_of_two_numbers(a: usize, b: usize) -> usize {
+    if b == 0 {
+        return a;
+    }
+    gcd_of_two_numbers(b, a % b)
 }
 
 impl From<&'static str> for Machine {
@@ -231,6 +299,11 @@ fn get_pulses_prod(input: &'static str) -> usize {
     machine.apply()
 }
 
+fn get_pulses_min(input: &'static str) -> usize {
+    let mut machine = Machine::from(input);
+    machine.apply_min()
+}
+
 fn part_1(input: &'static str) {
     let answer = get_pulses_prod(input);
 
@@ -238,7 +311,7 @@ fn part_1(input: &'static str) {
 }
 
 fn part_2(input: &'static str) {
-    let answer = solve_part_2(input);
+    let answer = get_pulses_min(input);
 
     println!("Part 2 answer is {answer}");
 }
