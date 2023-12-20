@@ -1,4 +1,6 @@
-use crate::utls::read_text_from_file;
+use crate::{utls::read_text_from_file, year_23::day_20::copied::solve_part_2};
+
+mod copied;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Pulse {
@@ -143,7 +145,7 @@ impl Machine {
                 let ModuleType::Conjunction { input_map } = &mut modul.module_type else {
                     panic!("Must be conjunction")
                 };
-                if input_map.iter().find(|inmap| inmap.0 == target).is_none() {
+                if input_map.iter().all(|inmap| inmap.0 != target) {
                     input_map.push((sender, Pulse::Low));
                 }
             }
@@ -174,10 +176,7 @@ impl Machine {
                     self.modules
                         .iter_mut()
                         .find(|m| m.name == state.target)
-                        .map_or_else(
-                            || Vec::new(),
-                            |module| module.apply(state.sender, state.pulse),
-                        )
+                        .map_or_else(Vec::new, |module| module.apply(state.sender, state.pulse))
                 })
                 .collect();
 
@@ -238,7 +237,11 @@ fn part_1(input: &'static str) {
     println!("Part 1 answer is {answer}");
 }
 
-fn part_2(_input: &str) {}
+fn part_2(input: &'static str) {
+    let answer = solve_part_2(input);
+
+    println!("Part 2 answer is {answer}");
+}
 
 pub fn run() {
     let input = read_text_from_file("23", "20").leak();
@@ -268,4 +271,3 @@ mod test {
         assert_eq!(get_pulses_prod(INPUT_2), 11687500);
     }
 }
-
