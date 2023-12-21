@@ -188,4 +188,3 @@ mod test {
         assert_eq!(calc_max_plots(INPUT, 100), 6536);
     }
 }
-
