@@ -1,3 +1,8 @@
+use std::{
+    collections::{BTreeMap, HashSet},
+    fmt::Display,
+};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum BrickType {
     AxisX,
@@ -6,7 +11,7 @@ enum BrickType {
     Cube,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct Point {
     x: usize,
     y: usize,
@@ -46,6 +51,16 @@ impl From<&'static str> for Brick {
     }
 }
 
+impl Display for Brick {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{},{},{}~{},{},{}",
+            self.start.x, self.start.y, self.start.z, self.end.x, self.end.y, self.end.z
+        )
+    }
+}
+
 impl Brick {
     fn get_type(&self) -> BrickType {
         if self.start.x != self.end.x {
@@ -58,18 +73,111 @@ impl Brick {
             BrickType::Cube
         }
     }
+
+    fn min_z(&self) -> usize {
+        self.start.z.min(self.end.z)
+    }
+
+    fn max_z(&self) -> usize {
+        self.start.z.max(self.end.z)
+    }
+
+    fn get_cubes(&self) -> Vec<Point> {
+        // assert!(self.start.x <= self.end.x);
+        // assert!(self.start.y <= self.end.y);
+        // assert!(self.start.z <= self.end.z);
+
+        let cubes = match self.get_type() {
+            BrickType::AxisX => (self.start.x..=self.end.x)
+                .map(|x| Point::new(x, self.start.y, self.start.z))
+                .collect(),
+            BrickType::AxisY => (self.start.y..=self.end.y)
+                .map(|y| Point::new(self.start.x, y, self.start.z))
+                .collect(),
+            BrickType::AxisZ => (self.start.z..=self.end.z)
+                .map(|z| Point::new(self.start.x, self.start.y, z))
+                .collect(),
+            BrickType::Cube => vec![self.start],
+        };
+
+        cubes
+    }
+}
+
+fn finish_fall(bricks: &mut Vec<Brick>) {
+    bricks.sort_by_key(|b| b.min_z());
+
+    for i in 0..bricks.len() {
+        let settled_bricks: HashSet<Point> =
+            bricks[..i].iter().flat_map(|b| b.get_cubes()).collect();
+        while bricks[i].min_z() > 1 {
+            let mut clone = bricks[i].clone();
+            clone.start.z -= 1;
+            clone.end.z -= 1;
+            if clone
+                .get_cubes()
+                .into_iter()
+                .any(|p| settled_bricks.contains(&p))
+            {
+                break;
+            }
+            bricks[i] = clone;
+        }
+    }
+}
+
+fn get_depedencies(bricks: &[Brick]) -> Vec<Vec<usize>> {
+    let mut dependencies = vec![vec![]; bricks.len()];
+
+    for (idx, brick) in bricks.iter().enumerate() {
+        let max_z = brick.max_z();
+        let cubes = brick.get_cubes();
+        bricks
+            .iter()
+            .enumerate()
+            .filter(|(_, b)| b.min_z() == max_z + 1)
+            .for_each(|(d_idx, d_brick)| {
+                let mut clone = d_brick.clone();
+                clone.start.z -= 1;
+                clone.end.z -= 1;
+                if clone.get_cubes().iter().any(|c| cubes.contains(c)) {
+                    dependencies[idx].push(d_idx);
+                }
+            });
+    }
+
+    dependencies
 }
 
 fn get_bricks_count(input: &'static str) -> usize {
-    let bricks: Vec<_> = input.lines().map(Brick::from).collect();
-    dbg!(bricks);
+    let mut bricks: Vec<_> = input.lines().map(Brick::from).collect();
 
-    todo!()
+    finish_fall(&mut bricks);
+
+    let dependencies = get_depedencies(&bricks);
+
+    let mut dep_count = BTreeMap::new();
+
+    dependencies.iter().flatten().for_each(|&num| {
+        dep_count
+            .entry(num)
+            .and_modify(|count| *count += 1)
+            .or_insert(1);
+    });
+
+    dependencies
+        .iter()
+        .filter(|dep| dep.iter().all(|num| dep_count[num] > 1))
+        .count()
 }
 
-fn part_1(input: &'static str) {}
+fn part_1(input: &'static str) {
+    let answer = get_bricks_count(input);
 
-fn part_2(input: &'static str) {}
+    println!("Part 1 answer is {answer}");
+}
+
+fn part_2(_input: &'static str) {}
 
 pub fn run() {
     //TODO: uncomment the first input and remove the later when the solution is solved
@@ -96,4 +204,3 @@ mod test {
         assert_eq!(get_bricks_count(INPUT), 5);
     }
 }
-
