@@ -222,9 +222,7 @@ fn part_2(input: &'static str) {
 }
 
 pub fn run() {
-    //TODO: uncomment the first input and remove the later when the solution is solved
-    // let input = crate::utls::read_text_from_file("23", "22").leak();
-    let input = crate::include_input!("23", "22");
+    let input = crate::utls::read_text_from_file("23", "22").leak();
     part_1(input);
     part_2(input);
 }
