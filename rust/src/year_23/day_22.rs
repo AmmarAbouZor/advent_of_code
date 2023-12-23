@@ -83,11 +83,7 @@ impl Brick {
     }
 
     fn get_cubes(&self) -> Vec<Point> {
-        // assert!(self.start.x <= self.end.x);
-        // assert!(self.start.y <= self.end.y);
-        // assert!(self.start.z <= self.end.z);
-
-        let cubes = match self.get_type() {
+        match self.get_type() {
             BrickType::AxisX => (self.start.x..=self.end.x)
                 .map(|x| Point::new(x, self.start.y, self.start.z))
                 .collect(),
@@ -98,9 +94,7 @@ impl Brick {
                 .map(|z| Point::new(self.start.x, self.start.y, z))
                 .collect(),
             BrickType::Cube => vec![self.start],
-        };
-
-        cubes
+        }
     }
 }
 
@@ -126,7 +120,7 @@ fn finish_fall(bricks: &mut Vec<Brick>) {
     }
 }
 
-fn get_depedencies(bricks: &[Brick]) -> Vec<Vec<usize>> {
+fn get_dependencies(bricks: &[Brick]) -> Vec<Vec<usize>> {
     let mut dependencies = vec![vec![]; bricks.len()];
 
     for (idx, brick) in bricks.iter().enumerate() {
@@ -154,7 +148,7 @@ fn get_bricks_count(input: &'static str) -> usize {
 
     finish_fall(&mut bricks);
 
-    let dependencies = get_depedencies(&bricks);
+    let dependencies = get_dependencies(&bricks);
 
     let mut dep_count = BTreeMap::new();
 
@@ -171,13 +165,61 @@ fn get_bricks_count(input: &'static str) -> usize {
         .count()
 }
 
+fn get_fall_sum(input: &'static str) -> usize {
+    let mut bricks: Vec<_> = input.lines().map(Brick::from).collect();
+
+    finish_fall(&mut bricks);
+
+    let dependencies = get_dependencies(&bricks);
+
+    let mut dep_count = BTreeMap::new();
+
+    dependencies.iter().flatten().for_each(|&num| {
+        dep_count
+            .entry(num)
+            .and_modify(|count| *count += 1)
+            .or_insert(1);
+    });
+
+    let mut sum = 0;
+
+    for dep in dependencies.iter() {
+        let mut count_clone = dep_count.clone();
+        let mut fallen_stack = Vec::new();
+        for b_id in dep.iter() {
+            let count = count_clone.get_mut(b_id).unwrap();
+            *count -= 1;
+            if *count == 0 {
+                fallen_stack.push(b_id);
+            }
+        }
+
+        while let Some(fall_id) = fallen_stack.pop() {
+            sum += 1;
+            for b_id in dependencies[*fall_id].iter() {
+                let count = count_clone.get_mut(b_id).unwrap();
+                *count -= 1;
+                if *count == 0 {
+                    fallen_stack.push(b_id);
+                }
+            }
+        }
+    }
+
+    sum
+}
+
 fn part_1(input: &'static str) {
     let answer = get_bricks_count(input);
 
     println!("Part 1 answer is {answer}");
 }
 
-fn part_2(_input: &'static str) {}
+fn part_2(input: &'static str) {
+    let answer = get_fall_sum(input);
+
+    println!("Part 2 answer is {answer}");
+}
 
 pub fn run() {
     //TODO: uncomment the first input and remove the later when the solution is solved
@@ -202,5 +244,6 @@ mod test {
     #[test]
     fn test_solution() {
         assert_eq!(get_bricks_count(INPUT), 5);
+        assert_eq!(get_fall_sum(INPUT), 7);
     }
 }
