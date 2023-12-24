@@ -32,40 +32,37 @@ struct LinearRepr {
 #[derive(Debug, Clone)]
 struct Hail {
     position: Point,
-    verlocity: Point,
+    velocity: Point,
 }
 
 impl From<&'static str> for Hail {
     fn from(value: &'static str) -> Self {
         let (pos, ver) = value.split_once(" @ ").unwrap();
         let position = Point::from(pos);
-        let verlocity = Point::from(ver);
+        let velocity = Point::from(ver);
 
-        Self {
-            position,
-            verlocity,
-        }
+        Self { position, velocity }
     }
 }
 
 impl Hail {
     fn get_linear_repr(&self) -> LinearRepr {
-        let a = self.verlocity.y;
-        let b = -self.verlocity.x;
-        let c = self.verlocity.x * self.position.y - self.verlocity.y * self.position.x;
+        let a = self.velocity.y;
+        let b = -self.velocity.x;
+        let c = self.velocity.x * self.position.y - self.velocity.y * self.position.x;
 
         LinearRepr { a, b, c }
     }
 }
 
 fn intersection(line1: &LinearRepr, line2: &LinearRepr) -> Option<Point> {
-    let dividor = line1.a * line2.b - line2.a * line1.b;
-    if dividor == 0 {
+    let divider = line1.a * line2.b - line2.a * line1.b;
+    if divider == 0 {
         return None;
     }
 
-    let x = (line1.b * line2.c - line2.b * line1.c) / dividor;
-    let y = (line1.c * line2.a - line2.c * line1.a) / dividor;
+    let x = (line1.b * line2.c - line2.b * line1.c) / divider;
+    let y = (line1.c * line2.a - line2.c * line1.a) / divider;
 
     Some(Point::new(x, y, 0))
 }
@@ -81,19 +78,19 @@ fn find_inter_count(input: &'static str, start: i128, end: i128) -> usize {
             let h2 = exprs[j];
 
             if let Some(p) = intersection(&h1, &h2) {
-                if i128::signum(p.x - hails[i].position.x) != i128::signum(hails[i].verlocity.x) {
+                if i128::signum(p.x - hails[i].position.x) != i128::signum(hails[i].velocity.x) {
                     continue;
                 }
 
-                if i128::signum(p.x - hails[j].position.x) != i128::signum(hails[j].verlocity.x) {
+                if i128::signum(p.x - hails[j].position.x) != i128::signum(hails[j].velocity.x) {
                     continue;
                 }
 
-                if i128::signum(p.y - hails[i].position.y) != i128::signum(hails[i].verlocity.y) {
+                if i128::signum(p.y - hails[i].position.y) != i128::signum(hails[i].velocity.y) {
                     continue;
                 }
 
-                if i128::signum(p.y - hails[j].position.y) != i128::signum(hails[j].verlocity.y) {
+                if i128::signum(p.y - hails[j].position.y) != i128::signum(hails[j].velocity.y) {
                     continue;
                 }
 
@@ -114,7 +111,7 @@ fn part_1(input: &'static str) {
 }
 
 fn part_2(_input: &'static str) {
-    println!("Part 2 answer is solved using z3 sovler in python. the Answer is 566373506408017");
+    println!("Part 2 answer is solved using z3 solver in python. the Answer is 566373506408017");
 }
 
 pub fn run() {
@@ -138,4 +135,3 @@ mod test {
         assert_eq!(find_inter_count(INPUT, 7, 27), 2);
     }
 }
-
