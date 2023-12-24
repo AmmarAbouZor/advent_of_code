@@ -113,12 +113,12 @@ fn part_1(input: &'static str) {
     println!("Part 1 answer is {answer}");
 }
 
-fn part_2(input: &'static str) {}
+fn part_2(_input: &'static str) {
+    println!("Part 2 answer is solved using z3 sovler in python. the Answer is 566373506408017");
+}
 
 pub fn run() {
-    //TODO: uncomment the first input and remove the later when the solution is solved
-    // let input = crate::utls::read_text_from_file("23", "24").leak();
-    let input = crate::include_input!("23", "24");
+    let input = crate::utls::read_text_from_file("23", "24").leak();
     part_1(input);
     part_2(input);
 }
