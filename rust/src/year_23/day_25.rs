@@ -8,14 +8,10 @@ fn parse_edges(input: &'static str) -> HashMap<&'static str, HashSet<&'static st
 
         for part in parts.split_whitespace() {
             // Key -> Part
-            map.entry(key)
-                .or_insert_with(|| HashSet::new())
-                .insert(part);
+            map.entry(key).or_insert_with(HashSet::new).insert(part);
 
             // Connections are non directional -> Add the connection from part to key too
-            map.entry(part)
-                .or_insert_with(|| HashSet::new())
-                .insert(key);
+            map.entry(part).or_insert_with(HashSet::new).insert(key);
         }
     }
 
@@ -107,4 +103,3 @@ pub fn run() {
     part_1(input);
     part_2(input);
 }
-

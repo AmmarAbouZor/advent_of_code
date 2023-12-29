@@ -36,7 +36,7 @@ enum Shape {
     Minus,
     Plus,
     ReversedL,
-    IShape,
+    ISh,
     BigPoint,
 }
 
@@ -109,7 +109,7 @@ impl Tetris {
                     self.points.push(Point::new(i, max_y + 4));
                 }
             }
-            Shape::IShape => {
+            Shape::ISh => {
                 for i in 0..4 {
                     self.points.push(Point::new(2, max_y + (3 - i) + 4));
                 }
@@ -138,7 +138,7 @@ impl Game {
             Shape::Minus,
             Shape::Plus,
             Shape::ReversedL,
-            Shape::IShape,
+            Shape::ISh,
             Shape::BigPoint,
         ];
 
