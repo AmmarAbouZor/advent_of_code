@@ -27,7 +27,7 @@ fn fetch_input() -> (HashMap<Couple, i32>, HashSet<String>) {
     let mut people = HashSet::new();
     read_lines_from_file(r"src/year_15/day_13.txt")
         .iter()
-        .foreach(|line| {
+        .for_each(|line| {
             let parts: Vec<&str> = line.split(' ').collect();
             let a_person = parts[0];
             let b_person = parts.last().unwrap().trim_end_matches('.');
