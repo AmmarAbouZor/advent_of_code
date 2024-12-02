@@ -38,7 +38,7 @@ impl<'a> From<&'a str> for Field<'a> {
     }
 }
 
-impl<'a> Field<'a> {
+impl Field<'_> {
     fn is_valid(&self) -> bool {
         match self.typ {
             FieldType::BirthYear => self
@@ -86,7 +86,7 @@ struct Passport<'a> {
     fields: Vec<Field<'a>>,
 }
 
-impl<'a> Passport<'a> {
+impl Passport<'_> {
     fn has_required_fields(&self) -> bool {
         let mut fields = [false; 7];
         for Field { typ, .. } in self.fields.iter() {
@@ -211,4 +211,3 @@ iyr:2010 hgt:158cm hcl:#b6652a ecl:blu byr:1944 eyr:2021 pid:093154719";
         assert_eq!(get_valid_passes(INPUT), 4);
     }
 }
-

@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashSet, VecDeque},
-    usize,
-};
+use std::collections::{HashSet, VecDeque};
 
 use crate::utls::read_text_from_file;
 
@@ -134,4 +131,3 @@ mod test {
         assert_eq!(calc_first_sync(INPUT), 195);
     }
 }
-

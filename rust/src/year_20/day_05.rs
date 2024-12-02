@@ -19,7 +19,7 @@ impl<'a> From<&'a str> for Seat<'a> {
     }
 }
 
-impl<'a> Seat<'a> {
+impl Seat<'_> {
     pub fn seat_id(&self) -> usize {
         // rows
         let (mut min, mut max) = (0, 127);

@@ -162,7 +162,7 @@ fn get_humn_val(input: &str) -> isize {
             };
             hashes.insert(monkey.name.to_owned(), val);
         } else {
-            if hashes.get(&monkey.name).is_some() {
+            if hashes.contains_key(&monkey.name) {
                 monkey.solve_back(&mut hashes);
             }
             monkeys.push_front(monkey);

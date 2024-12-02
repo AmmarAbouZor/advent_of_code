@@ -19,7 +19,7 @@ impl Dir {
     }
 }
 
-fn tilt_north(cells: &mut Vec<Vec<u8>>) {
+fn tilt_north(cells: &mut [Vec<u8>]) {
     for row in 1..cells.len() {
         for col in 0..cells[0].len() {
             if cells[row][col] != b'O' {
@@ -40,7 +40,7 @@ fn tilt_north(cells: &mut Vec<Vec<u8>>) {
     }
 }
 
-fn tilt_south(cells: &mut Vec<Vec<u8>>) {
+fn tilt_south(cells: &mut [Vec<u8>]) {
     for row in (0..cells.len() - 1).rev() {
         for col in 0..cells[0].len() {
             if cells[row][col] != b'O' {
@@ -62,7 +62,7 @@ fn tilt_south(cells: &mut Vec<Vec<u8>>) {
     }
 }
 
-fn tilt_west(cells: &mut Vec<Vec<u8>>) {
+fn tilt_west(cells: &mut [Vec<u8>]) {
     for row in 0..cells.len() {
         for col in 1..cells[0].len() {
             if cells[row][col] != b'O' {
@@ -83,7 +83,7 @@ fn tilt_west(cells: &mut Vec<Vec<u8>>) {
     }
 }
 
-fn tilt_east(cells: &mut Vec<Vec<u8>>) {
+fn tilt_east(cells: &mut [Vec<u8>]) {
     for row in 0..cells.len() {
         for col in (0..cells[0].len() - 1).rev() {
             if cells[row][col] != b'O' {
@@ -105,7 +105,7 @@ fn tilt_east(cells: &mut Vec<Vec<u8>>) {
     }
 }
 
-fn tilt_cycles(cells: &mut Vec<Vec<u8>>) {
+fn tilt_cycles(cells: &mut [Vec<u8>]) {
     let mut dir = Dir::North;
     // for _ in 0..1000000000 {
     // it settle down after 1000 in my input
@@ -133,7 +133,7 @@ fn print_cells(cells: &[Vec<u8>]) {
 
 fn calc_load<F>(input: &str, tilt: F) -> usize
 where
-    F: Fn(&mut Vec<Vec<u8>>),
+    F: Fn(&mut [Vec<u8>]),
 {
     let mut cells: Vec<_> = input.lines().map(|line| line.as_bytes().to_vec()).collect();
     tilt(&mut cells);
@@ -185,4 +185,3 @@ O.#..O.#.#
         assert_eq!(calc_load(INPUT, tilt_cycles), 64);
     }
 }
-

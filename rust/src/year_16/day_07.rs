@@ -35,11 +35,11 @@ impl FromStr for IP {
 struct Aba(char, char);
 impl IP {
     fn support_tls(&self) -> bool {
-        self.valid_secs.iter().any(IP::has_abba)
+        self.valid_secs.iter().any(|chars| IP::has_abba(chars))
             && self.hypernet_secs.iter().all(|sec| !IP::has_abba(sec))
     }
 
-    fn has_abba(chars: &Vec<char>) -> bool {
+    fn has_abba(chars: &[char]) -> bool {
         let mut index = 0;
 
         while index < chars.len() - 3 {

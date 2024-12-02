@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashSet, VecDeque},
-    usize,
-};
+use std::collections::{HashSet, VecDeque};
 
 use itertools::{Itertools, MinMaxResult::MinMax};
 

@@ -98,7 +98,7 @@ impl Brick {
     }
 }
 
-fn finish_fall(bricks: &mut Vec<Brick>) {
+fn finish_fall(bricks: &mut [Brick]) {
     bricks.sort_by_key(|b| b.min_z());
 
     for i in 0..bricks.len() {

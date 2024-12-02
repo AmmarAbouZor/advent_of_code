@@ -19,7 +19,7 @@ fn calc_total_distance(input: &'static str) -> usize {
     right.sort_unstable();
 
     left.into_iter()
-        .zip_eq(right.into_iter())
+        .zip_eq(right)
         .map(|(n1, n2)| n1.abs_diff(n2))
         .sum()
 }

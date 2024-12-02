@@ -1,4 +1,4 @@
-use std::{collections::HashMap, usize};
+use std::collections::HashMap;
 
 use crate::utls::read_text_from_file;
 
@@ -160,4 +160,3 @@ gcafb gcf dcaebfg ecagb gf abcdeg gaef cafbge fdbac fegbdc | fgae cfgab fg bagce
         assert_eq!(calc_outputs(INPUT), 61229);
     }
 }
-

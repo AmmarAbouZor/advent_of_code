@@ -21,7 +21,7 @@ impl<'a> From<&'a str> for Password<'a> {
     }
 }
 
-impl<'a> Password<'a> {
+impl Password<'_> {
     fn is_valid_1(&self) -> bool {
         let ch_count = self.text.chars().filter(|&ch| ch == self.ch).count();
 
@@ -89,4 +89,3 @@ mod test {
         assert_eq!(calc_valid_password_2(INPUT), 1);
     }
 }
-

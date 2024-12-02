@@ -15,7 +15,7 @@ impl<'a> From<&'a str> for Answers<'a> {
     }
 }
 
-impl<'a> Answers<'a> {
+impl Answers<'_> {
     fn unique_answers_count(&self) -> usize {
         self.lines
             .iter()
@@ -95,4 +95,3 @@ b";
         assert_eq!(calc_intersect_sum(INPUT), 6);
     }
 }
-
