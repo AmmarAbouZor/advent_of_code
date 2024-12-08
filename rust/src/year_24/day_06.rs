@@ -90,12 +90,9 @@ fn is_circle(grid: Vec<Vec<char>>, mut cur_pos: (usize, usize), mut dir: Directi
             Some(ch) => ch,
             None => return false,
         };
-        match next_char {
-            '#' => {
-                dir = dir.rotate();
-                continue;
-            }
-            _ => {}
+        if next_char == &'#' {
+            dir = dir.rotate();
+            continue;
         };
 
         if !visited.insert((cur_pos, dir)) {

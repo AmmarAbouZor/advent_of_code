@@ -64,10 +64,7 @@ fn unique_antinodes_once(input: &str) -> usize {
 
     antennas
         .iter()
-        .flat_map(|(_name, poses)| {
-            let antinodes = antenna_antinodes_once(poses);
-            antinodes
-        })
+        .flat_map(|(_name, poses)| antenna_antinodes_once(poses))
         .filter(|antinode| antinode.is_inside(grid.len() as i32, grid[0].len() as i32))
         .unique()
         .count()
@@ -111,8 +108,7 @@ fn unique_antinodes_all(input: &str) -> usize {
     antennas
         .iter()
         .flat_map(|(_name, poses)| {
-            let antinodes = antenna_antinodes_all(poses, grid.len() as i32, grid[0].len() as i32);
-            antinodes
+            antenna_antinodes_all(poses, grid.len() as i32, grid[0].len() as i32)
         })
         .unique()
         .count()
@@ -155,4 +151,3 @@ mod test {
         assert_eq!(all_count, 34);
     }
 }
-

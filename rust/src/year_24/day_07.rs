@@ -58,12 +58,11 @@ fn is_valid(target: i64, parts: &[i64], all_ops: &[Op]) -> bool {
         .any(|ops| {
             let mut ops = ops.into_iter();
             let sum = parts
-                .into_iter()
+                .iter()
                 .copied()
                 .reduce(|acc, e| {
                     let op = ops.next().unwrap();
-                    let v = op.apply(acc, e);
-                    v
+                    op.apply(acc, e)
                 })
                 .unwrap();
             sum == target
@@ -130,4 +129,3 @@ mod test {
         assert_eq!(sum2, 11387);
     }
 }
-
