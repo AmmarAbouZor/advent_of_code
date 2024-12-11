@@ -1,6 +1,7 @@
+use std::collections::HashMap;
+
 fn parse(input: &str) -> Vec<u64> {
     input
-        .trim()
         .split_whitespace()
         .map(|num| num.parse().unwrap())
         .collect()
@@ -23,30 +24,32 @@ fn is_digit_count_even(num: u64) -> Option<(u64, u64)> {
     None
 }
 
-fn apply_blink(nums: Vec<u64>) -> Vec<u64> {
-    let mut applied = Vec::with_capacity(nums.len() * 3 / 2);
+fn blink_after_count(input: &str, max_count: usize) -> u64 {
+    let nums = parse(input);
+
+    let mut num_counts = HashMap::new();
 
     for num in nums {
-        if num == 0 {
-            applied.push(1);
-        } else if let Some((n1, n2)) = is_digit_count_even(num) {
-            applied.push(n1);
-            applied.push(n2);
-        } else {
-            applied.push(num * 2024);
+        *num_counts.entry(num).or_insert(0_u64) += 1;
+    }
+
+    for _i in 0..max_count {
+        let mut new_map = HashMap::new();
+        for (&num, &count) in num_counts.iter() {
+            if num == 0 {
+                *new_map.entry(1).or_insert(0) += count;
+            } else if let Some((n1, n2)) = is_digit_count_even(num) {
+                *new_map.entry(n1).or_insert(0) += count;
+                *new_map.entry(n2).or_insert(0) += count;
+            } else {
+                *new_map.entry(num * 2024).or_insert(0) += count;
+            }
         }
+
+        num_counts = new_map
     }
 
-    applied
-}
-
-fn blink_after_count(input: &str, count: usize) -> usize {
-    let mut nums = parse(input);
-    for _ in 0..count {
-        nums = apply_blink(nums);
-    }
-
-    nums.len()
+    num_counts.values().sum()
 }
 
 fn part_1(input: &'static str) {
@@ -55,8 +58,8 @@ fn part_1(input: &'static str) {
 }
 
 fn part_2(input: &'static str) {
-    // let ans = blink_after_count(input, 75);
-    // println!("Part 1 answer is {ans}")
+    let ans = blink_after_count(input, 75);
+    println!("Part 1 answer is {ans}")
 }
 
 pub fn run() {
@@ -84,4 +87,3 @@ mod test {
         assert_eq!(blinks, 55312)
     }
 }
-
