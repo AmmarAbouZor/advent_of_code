@@ -12,7 +12,19 @@ impl Pos {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+struct PosIsize {
+    row: isize,
+    col: isize,
+}
+
+impl PosIsize {
+    fn new(row: isize, col: isize) -> Self {
+        Self { row, col }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum Dir {
     Up,
     Right,
@@ -33,6 +45,15 @@ impl Dir {
             Dir::Left => Pos::new(pos.row, pos.col.wrapping_sub(1)),
         }
     }
+    #[inline]
+    fn next_isize(self, pos: &PosIsize) -> PosIsize {
+        match self {
+            Dir::Up => PosIsize::new(pos.row - 1, pos.col),
+            Dir::Right => PosIsize::new(pos.row, pos.col + 1),
+            Dir::Down => PosIsize::new(pos.row + 1, pos.col),
+            Dir::Left => PosIsize::new(pos.row, pos.col - 1),
+        }
+    }
 }
 
 fn parse(input: &str) -> Vec<Vec<char>> {
@@ -49,7 +70,7 @@ fn get_groups(grid: &[Vec<char>]) -> HashMap<char, Vec<Vec<Pos>>> {
         for c in 0..cols_count {
             let cur_char = grid[r][c];
             let cur_pos = Pos::new(r, c);
-            let ch_sets = groups.entry(cur_char).or_insert(Vec::new());
+            let ch_sets = groups.entry(cur_char).or_default();
             let mut found = false;
             for dir in [Dir::Left, Dir::Up] {
                 let next_pos = dir.next(&cur_pos);
@@ -162,7 +183,68 @@ fn part_1(input: &'static str) {
     println!("Part 1 answer is {price}")
 }
 
-fn part_2(input: &'static str) {}
+fn group_area_side(grid: &[Vec<char>], ch: char, grp: &Vec<Pos>) -> (usize, usize) {
+    let area = grp.len();
+    let mut fences = Vec::new();
+    for cur_pos in grp {
+        let cur_pos = PosIsize::new(cur_pos.row as isize, cur_pos.col as isize);
+        for &dir in Dir::all() {
+            let next_pos = dir.next_isize(&cur_pos);
+            if next_pos.row.is_negative() || next_pos.col.is_negative() {
+                fences.push((dir, next_pos));
+                continue;
+            }
+            match grid
+                .get(next_pos.row as usize)
+                .and_then(|row| row.get(next_pos.col as usize))
+            {
+                Some(&next_ch) if next_ch != ch => fences.push((dir, next_pos)),
+                None => fences.push((dir, next_pos)),
+                _ => {}
+            };
+        }
+    }
+
+    let mut count = 0;
+    for (dir, fence) in fences.iter() {
+        let dir = *dir;
+        let is_horizontal = matches!(dir, Dir::Up | Dir::Down);
+
+        if is_horizontal {
+            let left = Dir::Left.next_isize(fence);
+            if !fences.contains(&(dir, left)) {
+                count += 1;
+            }
+        } else {
+            // vertical
+            let up = Dir::Up.next_isize(fence);
+            if !fences.contains(&(dir, up)) {
+                count += 1;
+            }
+        }
+    }
+
+    (area, count)
+}
+
+fn calc_fences(input: &str) -> usize {
+    let grid = parse(input);
+    let groups = get_groups(&grid);
+    groups
+        .into_iter()
+        .map(|(char, sets)| {
+            sets.iter()
+                .map(|set| group_area_side(&grid, char, set))
+                .map(|(area, perimter)| area * perimter)
+                .sum::<usize>()
+        })
+        .sum()
+}
+
+fn part_2(input: &'static str) {
+    let ans = calc_fences(input);
+    println!("Part 2 answer is {ans}")
+}
 
 pub fn run() {
     let input = crate::utls::read_text_from_file("24", "12").leak();
@@ -189,6 +271,8 @@ MMMISSJEEE";
     fn test_solution() {
         let price = calc_price(INPUT);
         assert_eq!(price, 1930);
+
+        let fences = calc_fences(INPUT);
+        assert_eq!(fences, 1206);
     }
 }
-
