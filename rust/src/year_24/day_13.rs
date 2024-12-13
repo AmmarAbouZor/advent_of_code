@@ -1,11 +1,9 @@
-use std::collections::{hash_map::Entry, HashMap, VecDeque};
-
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 struct Button {
-    dx: usize,
-    dy: usize,
+    dx: isize,
+    dy: isize,
 }
 
 impl From<&str> for Button {
@@ -25,14 +23,8 @@ impl From<&str> for Button {
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 struct Pos {
-    x: usize,
-    y: usize,
-}
-
-impl Pos {
-    fn new(x: usize, y: usize) -> Self {
-        Self { x, y }
-    }
+    x: isize,
+    y: isize,
 }
 
 impl From<&str> for Pos {
@@ -71,24 +63,12 @@ impl From<&str> for Machine {
     }
 }
 
-#[derive(Debug, Clone)]
-struct State {
-    pos: Pos,
-    tokens: usize,
-}
-
-impl State {
-    fn new(pos: Pos, tokens: usize) -> Self {
-        Self { pos, tokens }
-    }
-}
-
 fn parse(input: &str) -> Vec<Machine> {
     input.split("\n\n").map(|chunk| chunk.into()).collect()
 }
 
-fn machine_tokens(machine: &Machine, max: usize) -> Option<usize> {
-    let mut tokens = usize::MAX;
+fn machine_tokens(machine: &Machine, max: isize) -> Option<usize> {
+    let mut tokens = isize::MAX;
 
     for a in 1..=max {
         for b in 1..=max {
@@ -106,10 +86,10 @@ fn machine_tokens(machine: &Machine, max: usize) -> Option<usize> {
         }
     }
 
-    if tokens == usize::MAX {
+    if tokens == isize::MAX {
         None
     } else {
-        Some(tokens)
+        Some(tokens as usize)
     }
 }
 
@@ -132,63 +112,34 @@ fn huge_calc_min_tokens(input: &str) -> usize {
         m.target.x += 10000000000000;
         m.target.y += 10000000000000;
     });
-    machines
-        .par_iter()
-        .filter_map(|machine| huge_machine_tokens(machine))
-        .sum()
+    machines.par_iter().filter_map(machine_tokens_denom).sum()
 }
 
-fn huge_machine_tokens(machine: &Machine) -> Option<usize> {
-    let mut tokens = usize::MAX;
-
-    let mut visited: HashMap<Pos, usize> = HashMap::new();
-
-    let mut queue = VecDeque::new();
-    let start = State::new(Pos::new(0, 0), 0);
-    queue.push_back(start);
-
-    while let Some(state) = queue.pop_back() {
-        if state.pos.x > machine.target.x || state.pos.y > machine.target.y {
-            continue;
-        }
-
-        if state.pos == machine.target {
-            tokens = tokens.min(state.tokens);
-            continue;
-        }
-
-        match visited.entry(state.pos) {
-            Entry::Occupied(mut occupied_entry) => {
-                let existing = *occupied_entry.get();
-                if state.tokens >= existing {
-                    continue;
-                } else {
-                    occupied_entry.insert(state.tokens);
-                }
-            }
-            Entry::Vacant(vacant_entry) => {
-                vacant_entry.insert(state.tokens);
-            }
-        }
-
-        let mut state_a = state.clone();
-        state_a.pos.x += machine.but_a.dx;
-        state_a.pos.y += machine.but_a.dy;
-        state_a.tokens += 3;
-        queue.push_back(state_a);
-
-        let mut state_b = state;
-        state_b.pos.x += machine.but_b.dx;
-        state_b.pos.y += machine.but_b.dy;
-        state_b.tokens += 1;
-        queue.push_back(state_b);
+// Machine input forms an equation: `target = x*but_a + y*but_b`
+// This is can be solved in the simple math way
+fn machine_tokens_denom(machine: &Machine) -> Option<usize> {
+    let denom = machine.but_a.dx * machine.but_b.dy - machine.but_a.dy * machine.but_b.dx;
+    if denom == 0 {
+        return None;
     }
 
-    if tokens == usize::MAX {
-        None
-    } else {
-        Some(tokens)
+    let num1 = machine.but_a.dx * machine.target.y - machine.but_a.dy * machine.target.x;
+    let num2 = machine.but_b.dy * machine.target.x - machine.but_b.dx * machine.target.y;
+
+    if num1 % denom != 0 || num2 % denom != 0 {
+        return None;
     }
+
+    let a_count = num1 / denom;
+    let b_count = num2 / denom;
+
+    if a_count < 0 || b_count < 0 {
+        return None;
+    }
+
+    let res = a_count + 3 * b_count;
+
+    Some(res as usize)
 }
 
 fn part_2(input: &'static str) {
@@ -233,7 +184,9 @@ Prize: X=18641, Y=10279";
             m.target.y += 10000000000000;
         });
 
-        assert!(huge_machine_tokens(&machines[0]).is_none());
+        assert!(machine_tokens_denom(&machines[0]).is_none());
+        assert!(machine_tokens_denom(&machines[1]).is_some());
+        assert!(machine_tokens_denom(&machines[2]).is_none());
+        assert!(machine_tokens_denom(&machines[3]).is_some());
     }
 }
-
