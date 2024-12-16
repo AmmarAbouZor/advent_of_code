@@ -314,7 +314,7 @@ fn apply_move_widen(grid: &mut [Vec<SlotWiden>], robot: Pos, dir: Dir) -> Pos {
     grid[robot.row][robot.col] = SlotWiden::Empty;
     grid[next_robot.row][next_robot.col] = SlotWiden::Robot;
 
-    return next_robot;
+    next_robot
 }
 
 fn sum_gps_widen(input: &str) -> usize {
@@ -426,4 +426,3 @@ v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^";
         assert_eq!(sum_widen, 9021);
     }
 }
-
