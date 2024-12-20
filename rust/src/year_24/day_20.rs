@@ -60,12 +60,12 @@ fn parse(input: &str) -> StartInfo {
     let mut walls = HashSet::new();
     let mut start = None;
     let mut end = None;
-    for r in 0..rows_count {
-        for c in 0..cols_count {
-            match grid[r][c] {
-                '#' => _ = walls.insert(Pos::new(r, c)),
-                'S' => start = Some(Pos::new(r, c)),
-                'E' => end = Some(Pos::new(r, c)),
+    for (ridx, row) in grid.iter().enumerate() {
+        for (cidx, &ch) in row.iter().enumerate() {
+            match ch {
+                '#' => _ = walls.insert(Pos::new(ridx, cidx)),
+                'S' => start = Some(Pos::new(ridx, cidx)),
+                'E' => end = Some(Pos::new(ridx, cidx)),
                 _ => {}
             }
         }
@@ -158,6 +158,7 @@ fn cheat_counts(input: &str) -> HashMap<usize, usize> {
 }
 
 fn part_1(input: &'static str) {
+    // My initial solution
     let counts = cheat_counts(input);
     let sum: usize = counts
         .iter()
@@ -166,9 +167,76 @@ fn part_1(input: &'static str) {
         .sum();
 
     println!("Part 1 answer is {sum}");
+
+    // Solution after finding out about Manhattan distance solution
+    let ans = solve_with_manhattan_dist(input, 2, 100);
+    println!("Part 1 answer with manhattan dist {ans}");
 }
 
-fn part_2(input: &'static str) {}
+fn part_2(input: &'static str) {
+    let ans = solve_with_manhattan_dist(input, 20, 100);
+    println!("Part 2 answer is {ans}");
+}
+
+/// Get score for all positions in the map using bfs algorithm
+fn positions_scores(start: &Pos, end: &Pos, walls: &HashSet<Pos>) -> HashMap<Pos, usize> {
+    let mut queue = VecDeque::new();
+    queue.push_back((*start, 0));
+    let mut visited: HashMap<Pos, usize> = HashMap::new();
+    while let Some((pos, score)) = queue.pop_front() {
+        match visited.entry(pos) {
+            Entry::Occupied(mut occupied_entry) => {
+                if *occupied_entry.get() > score {
+                    _ = occupied_entry.insert(score)
+                } else {
+                    continue;
+                }
+            }
+            Entry::Vacant(vacant_entry) => _ = vacant_entry.insert(score),
+        }
+
+        if &pos == end {
+            continue;
+        }
+
+        for dir in Dir::all() {
+            let next = dir.next(&pos);
+            if !walls.contains(&next) {
+                queue.push_back((next, score + 1));
+            }
+        }
+    }
+
+    visited
+}
+
+/// Checks if we can reach every two points with [`max_cheat`] number then
+/// check if the difference between their distance is bigger than [`min_diff`].
+/// Each case of those is counted because we are starting with one valid way so we
+/// don't have cases were the maze can't be solved.
+fn solve_with_manhattan_dist(input: &str, max_cheat: usize, min_diff: usize) -> usize {
+    let StartInfo {
+        walls,
+        start,
+        end,
+        rows_count: _,
+        cols_count: _,
+    } = parse(input);
+
+    let pos_scores = positions_scores(&start, &end, &walls);
+    let mut sum = 0;
+
+    for items in pos_scores.iter().combinations(2) {
+        let (p1, &score1) = items[0];
+        let (p2, &score2) = items[1];
+        let manhattan_dist = p1.row.abs_diff(p2.row) + p1.col.abs_diff(p2.col);
+        if manhattan_dist <= max_cheat && score1.abs_diff(score2) >= manhattan_dist + min_diff {
+            sum += 1;
+        }
+    }
+
+    sum
+}
 
 pub fn run() {
     let input = crate::utls::read_text_from_file("24", "20").leak();
@@ -202,6 +270,6 @@ mod test {
         let diffs = cheat_counts(INPUT);
         dbg!(diffs);
 
-        panic!()
+        println!("Test here is for debugging purpose only")
     }
 }
