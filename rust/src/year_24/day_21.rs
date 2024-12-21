@@ -1,6 +1,6 @@
-use std::fmt::Display;
+use std::{collections::HashMap, fmt::Display};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 enum Dir {
     A,
     Up,
@@ -24,6 +24,7 @@ impl Display for Dir {
 }
 
 impl Dir {
+    // Hard coded all shortest possible ways in directions pad
     fn go_to(self, target: Dir) -> &'static [&'static [Dir]] {
         use Dir::*;
         match self {
@@ -102,6 +103,7 @@ impl From<char> for Num {
 }
 
 impl Num {
+    // Hard coded all the possible ways in numbers pad because I like to typing and like to suffer.
     fn go_to(self, target: Num) -> &'static [&'static [Dir]] {
         use Dir::*;
         use Num as N;
@@ -268,6 +270,7 @@ fn parse(input: &str) -> Vec<(usize, Vec<Num>)> {
         .collect()
 }
 
+#[allow(unused)]
 fn print_dirs(dirs: &[Dir]) {
     for d in dirs {
         print!("{d}");
@@ -275,10 +278,9 @@ fn print_dirs(dirs: &[Dir]) {
     println!();
 }
 
-fn get_combinations(nums: &[Num]) -> Vec<Vec<Dir>> {
-    let mut n = vec![Num::A];
-    n.extend(nums);
-    let nums = n;
+fn get_nums_combinations(mut nums: Vec<Num>) -> Vec<Vec<Dir>> {
+    // Combinations starts from A Position.
+    nums.insert(0, Num::A);
 
     let mut res: Vec<Vec<Dir>> = vec![Vec::new()];
     for win in nums.windows(2) {
@@ -300,65 +302,75 @@ fn get_combinations(nums: &[Num]) -> Vec<Vec<Dir>> {
     res
 }
 
-fn get_combs_dirs(input: &[Dir]) -> Vec<Vec<Dir>> {
-    let mut n = vec![Dir::A];
-    n.extend(input);
-    let input = n;
+fn calc_code_min_score(
+    items: Vec<Num>,
+    depth: usize,
+    cache: &mut HashMap<(Vec<Dir>, usize), usize>,
+) -> usize {
+    fn calc_dirs_score_rec(
+        dirs: &[Dir],
+        depth: usize,
+        cache: &mut HashMap<(Vec<Dir>, usize), usize>,
+    ) -> usize {
+        let key = (dirs.to_vec(), depth);
+        if let Some(score) = cache.get(&key) {
+            return *score;
+        }
+        let mut sum = 0;
 
-    let mut res: Vec<Vec<Dir>> = vec![Vec::new()];
-    for win in input.windows(2) {
-        let d1 = win[0];
-        let d2 = win[1];
-        let mut new_comb = Vec::new();
-        let ways = d1.go_to(d2);
-        for com in &res {
-            for way in ways {
-                let mut clone = com.clone();
-                clone.extend_from_slice(way);
-                new_comb.push(clone);
+        // Every sequence will start from A to the first item, because the last action is always
+        // pushing another number;
+        let mut extended_dir = vec![Dir::A];
+        extended_dir.extend_from_slice(dirs);
+
+        for dir in extended_dir.windows(2) {
+            let n1 = dir[0];
+            let n2 = dir[1];
+            let ways = n1.go_to(n2);
+            if depth == 0 {
+                sum += ways.iter().map(|w| w.len()).min().unwrap();
+            } else {
+                sum += ways
+                    .iter()
+                    .map(|w| calc_dirs_score_rec(w, depth - 1, cache))
+                    .min()
+                    .unwrap()
             }
         }
 
-        res = new_comb;
+        cache.insert(key, sum);
+
+        sum
     }
 
-    res
+    let combs = get_nums_combinations(items);
+    combs
+        .iter()
+        .map(|com| calc_dirs_score_rec(com, depth - 1, cache))
+        .min()
+        .unwrap()
 }
 
-fn calc_score(items: &[Num], factor: usize) -> usize {
-    let mut min = usize::MAX;
-    let combs = get_combinations(items);
-    for c in combs {
-        // print_dirs(&c);
-        let nested = get_combs_dirs(&c);
-        for n in nested {
-            // print_dirs(&n);
-            let nested_2 = get_combs_dirs(&n);
-            for n2 in nested_2 {
-                // print_dirs(&n2);
-                min = min.min(n2.len());
-            }
+fn calc_all_score(input: &str, depth: usize) -> usize {
+    let mut cache = HashMap::new();
 
-            // println!("--------------------------------------------")
-        }
-        // println!("--------------------------------------------")
-    }
-
-    min * factor
-}
-
-fn calc_all_score(input: &str) -> usize {
     let nums = parse(input);
-    let res: usize = nums.iter().map(|(d, items)| calc_score(items, *d)).sum();
+    let res: usize = nums
+        .into_iter()
+        .map(|(d, items)| d * calc_code_min_score(items, depth, &mut cache))
+        .sum();
     res
 }
 
 fn part_1(input: &'static str) {
-    let res = calc_all_score(input);
+    let res = calc_all_score(input, 2);
     println!("Part 1 result is {res}");
 }
 
-fn part_2(input: &'static str) {}
+fn part_2(input: &'static str) {
+    let res = calc_all_score(input, 25);
+    println!("Part 2 result is {res}")
+}
 
 pub fn run() {
     let input = crate::utls::read_text_from_file("24", "21").leak();
@@ -379,7 +391,7 @@ mod test {
 
     #[test]
     fn test_solution() {
-        let res = calc_all_score(INPUT);
+        let res = calc_all_score(INPUT, 2);
         assert_eq!(res, 126384);
     }
 }
