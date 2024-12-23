@@ -1,23 +1,21 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-fn parse(input: &str) -> BTreeMap<&str, BTreeSet<&str>> {
+use itertools::Itertools;
+
+fn parse(input: &'static str) -> BTreeMap<&'static str, BTreeSet<&'static str>> {
     let mut map = BTreeMap::new();
     for line in input.lines().filter(|line| !line.is_empty()) {
         let (left, right) = line.split_once('-').unwrap();
-        map.entry(left)
-            .or_insert_with(|| BTreeSet::new())
-            .insert(right);
-        map.entry(right)
-            .or_insert_with(|| BTreeSet::new())
-            .insert(left);
+        map.entry(left).or_insert_with(BTreeSet::new).insert(right);
+        map.entry(right).or_insert_with(BTreeSet::new).insert(left);
     }
 
     map
 }
 
-fn get_sets_count(input: &str) -> usize {
+fn get_sets_count(input: &'static str) -> usize {
     let map = parse(input);
-    let mut sets: BTreeSet<BTreeSet<&str>> = BTreeSet::new();
+    let mut sets: BTreeSet<BTreeSet<&'static str>> = BTreeSet::new();
     for (&first, f_set) in map.iter() {
         if !first.starts_with('t') {
             continue;
@@ -46,7 +44,68 @@ fn part_1(input: &'static str) {
     println!("Part 1 answer is {ans}");
 }
 
-fn part_2(input: &'static str) {}
+fn get_largest_set(input: &'static str) -> String {
+    fn fill_rec(
+        current: &'static str,
+        cur_set: BTreeSet<&'static str>,
+        sets: &mut BTreeSet<BTreeSet<&'static str>>,
+        map: &BTreeMap<&'static str, BTreeSet<&'static str>>,
+        checked: &mut BTreeSet<BTreeSet<&'static str>>,
+    ) {
+        if checked.contains(&cur_set) {
+            return;
+        }
+
+        checked.insert(cur_set.clone());
+        for next in map[current].iter() {
+            let mut clone = cur_set.clone();
+
+            if clone.insert(next) {
+                let all_connected = cur_set.iter().all(|p| map[next].contains(p));
+                if all_connected {
+                    // New item
+                    fill_rec(next, clone, sets, map, checked);
+                }
+            } else {
+                if clone.len() == 2 {
+                    continue;
+                }
+
+                // Connection check is already done before calling fill_rec again.
+
+                sets.insert(clone);
+            }
+        }
+    }
+
+    let map = parse(input);
+    let mut sets: BTreeSet<BTreeSet<&'static str>> = BTreeSet::new();
+    let mut checked: BTreeSet<BTreeSet<&'static str>> = BTreeSet::new();
+    for &first in map.keys() {
+        fill_rec(
+            first,
+            BTreeSet::from_iter([first]),
+            &mut sets,
+            &map,
+            &mut checked,
+        );
+    }
+
+    let last: Vec<_> = sets
+        .into_iter()
+        .sorted_by_key(|s| s.len())
+        .last()
+        .unwrap()
+        .into_iter()
+        .collect();
+
+    last.join(",")
+}
+
+fn part_2(input: &'static str) {
+    let ans = get_largest_set(input);
+    println!("Part 2 answer is '{ans}'");
+}
 
 pub fn run() {
     let input = crate::utls::read_text_from_file("24", "23").leak();
@@ -58,7 +117,7 @@ pub fn run() {
 mod test {
     use super::*;
 
-    const INPUT: &str = "\
+    const INPUT: &'static str = "\
 kh-tc
 qp-kh
 de-cg
@@ -96,6 +155,9 @@ td-yn";
     fn test_solution() {
         let ans = get_sets_count(INPUT);
         assert_eq!(ans, 7);
+
+        let ans2 = get_largest_set(INPUT);
+        assert_eq!(&ans2, "co,de,ka,ta")
     }
 }
 
