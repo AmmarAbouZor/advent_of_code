@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, fmt::Display};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum OpType {
@@ -13,6 +13,16 @@ impl OpType {
             OpType::And => n1 & n2,
             OpType::Or => n1 | n2,
             OpType::Xor => n1 ^ n2,
+        }
+    }
+}
+
+impl Display for OpType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            OpType::And => write!(f, "AND"),
+            OpType::Or => write!(f, "OR"),
+            OpType::Xor => write!(f, "XOR"),
         }
     }
 }
@@ -92,7 +102,66 @@ fn part_1(input: &'static str) {
     println!("Part 1 answer is {ans}");
 }
 
-fn part_2(input: &'static str) {}
+/// Prints the relations between the operations in dot format to visualize it with Graphviz
+fn print_graph(input: &str) {
+    let (_, ops) = parse(input);
+    println!("digraph {{");
+    println!("node [style=filled, shape=ellipse];");
+    // Mark starts and ends with special colors
+    // We have 44 nodes in input.
+    for i in 0..=44 {
+        println!("x{i:02} [fillcolor=blue, fontcolor=white]");
+        println!("y{i:02} [fillcolor=blue, fontcolor=white]");
+        println!("z{i:02} [fillcolor=orange]");
+    }
+    // Print relations between operations in dot formats
+    for op in ops {
+        println!("{} -> {}_{}_{};", op.input1, op.input1, op.otype, op.input2);
+        println!("{} -> {}_{}_{};", op.input2, op.input1, op.otype, op.input2);
+        println!("{}_{}_{} -> {};", op.input1, op.otype, op.input2, op.output);
+    }
+    println!("}}");
+}
+
+fn part_2(input: &'static str) {
+    // Part 2 problem represents the algorithm for `binary full adder`:
+    //
+    // Here is a short description of the operations involved inside one cycle for Xn and Yn inputs
+    // and the carry from the previous cycle:
+    //
+    // - Xn XOR Yn -> Intermediate_sum
+    // - Xn AND Yn -> Intermediate_carry
+    // - prev_input_carry AND Intermediate_sum -> carry_of_intermediate_sum
+    // - prev_input_carry XOR Intermediate_sum -> Zn (sum result)
+    // - carry_of_intermediate_sum OR Intermediate_carry -> final_carry
+    //
+    // *********************************************************
+    //
+    // I ended up printing the nodes and inspecting it manually for displaced outputs,
+    // Then I wrote them here, sorted them then joined them for both inputs: (The one for my
+    // personal account and then one for ESR event)
+
+    print_graph(input);
+
+    // **********************************
+    // *** Output for ESR group input ***
+    // **********************************
+    let mut esr_input_swap = ["bpf", "z05", "hcc", "z11", "hqc", "qcw", "z35", "fdw"];
+    esr_input_swap.sort_unstable();
+
+    let ans_esr: String = esr_input_swap.join(",");
+
+    println!("Part 2 ESR input is '{ans_esr}'");
+
+    // *******************************************
+    // *** Output for my personal account input ***
+    // *******************************************
+    let mut my_input_swap = ["cmv", "z17", "rmj", "z23", "rdg", "z30", "mwp", "btb"];
+    my_input_swap.sort_unstable();
+    let ans_my = my_input_swap.join(",");
+
+    println!("Part 2 personal input is '{ans_my}'");
+}
 
 pub fn run() {
     let input = crate::utls::read_text_from_file("24", "24").leak();
