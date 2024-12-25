@@ -228,4 +228,3 @@ tnw OR pbm -> gnj";
         assert_eq!(ans, 2024);
     }
 }
-
