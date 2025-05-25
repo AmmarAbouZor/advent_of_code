@@ -11,10 +11,7 @@ impl From<&str> for Registers {
     fn from(value: &str) -> Self {
         let nums: Vec<_> = value
             .lines()
-            .map(|line| {
-                let num = line.split_whitespace().nth(2).unwrap().parse().unwrap();
-                num
-            })
+            .map(|line| line.split_whitespace().nth(2).unwrap().parse().unwrap())
             .collect();
 
         let a = nums[0];

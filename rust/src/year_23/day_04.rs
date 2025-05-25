@@ -54,7 +54,8 @@ fn calc_total_score(input: &str) -> usize {
 fn calc_score_copies(input: &str) -> usize {
     let mut copies_map = BTreeMap::new();
     copies_map.insert(1, 0);
-    let answer = input
+
+    input
         .lines()
         .map(Card::from)
         .enumerate()
@@ -72,9 +73,7 @@ fn calc_score_copies(input: &str) -> usize {
             }
             copies
         })
-        .sum();
-
-    answer
+        .sum()
 }
 
 fn part_1(input: &str) {

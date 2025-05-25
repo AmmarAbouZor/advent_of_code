@@ -94,7 +94,7 @@ fn get_largest_set(input: &'static str) -> String {
     let last: Vec<_> = sets
         .into_iter()
         .sorted_by_key(|s| s.len())
-        .last()
+        .next_back()
         .unwrap()
         .into_iter()
         .collect();

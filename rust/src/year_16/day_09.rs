@@ -49,9 +49,7 @@ fn decompress(input: &str) -> String {
         }
     }
 
-    let output = output.iter().collect::<String>();
-
-    output
+    output.iter().collect()
 }
 
 fn part_1() {
