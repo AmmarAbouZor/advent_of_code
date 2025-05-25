@@ -113,7 +113,7 @@ where
 fn part_1() {
     let sues = fetch_input();
     let matches = get_matches(sues, |compound| TICKER_TAP.contains(compound));
-    matches.iter().filter(|(_, &v)| v == 3).for_each(|(k, _)| {
+    matches.iter().filter(|&(_, &v)| v == 3).for_each(|(k, _)| {
         println!("part 1: sue number {}, got 3 matches", *k);
     });
 }
@@ -125,7 +125,7 @@ fn part_2() {
             .iter()
             .any(|ticker| compound.match_for_part_2(ticker))
     });
-    matches.iter().filter(|(_, &v)| v == 3).for_each(|(k, _)| {
+    matches.iter().filter(|&(_, &v)| v == 3).for_each(|(k, _)| {
         println!("part 2: sue number {}, got 3 matches", *k);
     });
 }

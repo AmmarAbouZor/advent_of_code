@@ -135,7 +135,7 @@ fn find_path_from_any_a(input: &str) -> usize {
         .flat_map(|(row_index, row)| {
             row.iter()
                 .enumerate()
-                .filter(|(_, &val)| val == 0)
+                .filter(|&(_, val)| *val == 0)
                 .map(move |(col_index, _)| Point::new(row_index as i16, col_index as i16))
         })
         .map(|p| find_shortest_path(&grid, p))

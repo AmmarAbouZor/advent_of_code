@@ -28,7 +28,7 @@ fn get_antennas(grid: &[Vec<char>]) -> HashMap<char, Vec<Pos>> {
         chars
             .iter()
             .enumerate()
-            .filter(|(_, &char)| char != '.')
+            .filter(|&(_, char)| *char != '.')
             .for_each(|(col, &char)| {
                 let pos = Pos::new(row as i32, col as i32);
                 antennas.entry(char).or_insert(Vec::new()).push(pos);

@@ -1,6 +1,9 @@
 #![allow(warnings, unused)]
 
-use rand::{rngs::ThreadRng, seq::SliceRandom};
+use rand::{
+    rngs::ThreadRng,
+    seq::{IndexedRandom, SliceRandom},
+};
 
 #[derive(Debug, Clone)]
 struct Boss {
@@ -154,8 +157,12 @@ impl Game {
 
         println!(
             "wizard:\n    hit_points: {}\n    mana: {}\n    shield: {}\n    poison: {}\n    recharge: {}",
-             self.wizard.hit_points, self.wizard.mana, self.wizard.shield_count,
-             self.wizard.poison_count, self.wizard.recharge_count);
+            self.wizard.hit_points,
+            self.wizard.mana,
+            self.wizard.shield_count,
+            self.wizard.poison_count,
+            self.wizard.recharge_count
+        );
     }
 
     fn print_key_bindings() {

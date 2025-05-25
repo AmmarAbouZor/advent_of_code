@@ -1,5 +1,5 @@
 use crate::utls::read_text_from_file;
-use rand::{rngs::ThreadRng, seq::SliceRandom, Rng};
+use rand::{Rng, rngs::ThreadRng, seq::SliceRandom};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 enum ItemType {
@@ -39,7 +39,7 @@ impl Direction {
     }
 
     fn rand(rng: &mut ThreadRng) -> Direction {
-        if rng.gen::<bool>() {
+        if rng.random::<bool>() {
             Direction::Up
         } else {
             Direction::Down
@@ -47,7 +47,7 @@ impl Direction {
     }
 
     fn rand_ratio(rng: &mut ThreadRng, ratio: f64) -> Direction {
-        if rng.gen_bool(ratio) {
+        if rng.random_bool(ratio) {
             Direction::Up
         } else {
             Direction::Down
@@ -116,7 +116,7 @@ impl Game {
                     .items
                     .iter()
                     .filter(|item| item.item_type == ItemType::Generator)
-                    .any(|gen| gen.floor == chip.floor)
+                    .any(|g| g.floor == chip.floor)
             {
                 return true;
             }
@@ -261,7 +261,7 @@ impl Game {
                 && pot_items
                     .iter()
                     .filter(|item| item.item_type == ItemType::Generator)
-                    .any(|gen| gen.floor == chip.floor)
+                    .any(|g| g.floor == chip.floor)
             {
                 return true;
             }
@@ -299,7 +299,7 @@ fn part_1() {
 
     let mut min_move = usize::MAX;
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     for _ in 0..1000 {
         let mut game = Game::new(items.clone());
         let mut count = 0;
@@ -331,7 +331,7 @@ fn part_2() {
 
     let mut min_move = usize::MAX;
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     for _ in 0..10000000 {
         let mut game = Game::new(items.clone());
         let mut count = 0;

@@ -53,7 +53,7 @@ fn calc_score(input: &str, unique: bool) -> usize {
         .flat_map(|(ri, row)| {
             row.iter()
                 .enumerate()
-                .filter(|(_, &num)| num == 0)
+                .filter(|&(_, num)| *num == 0)
                 .map(move |(ci, _)| Pos::new(ri, ci))
         })
         .map(|start| calc_valid_routes(&grid, start, unique))

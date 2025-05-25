@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use rand::{rngs::ThreadRng, seq::SliceRandom};
+use rand::{rngs::ThreadRng, seq::IndexedRandom};
 
 const FAV_NUM: i32 = 1362;
 
@@ -128,7 +128,7 @@ impl Game {
 fn get_best_route(target: Pos, seed: i32) -> usize {
     let mut min_moves = usize::MAX;
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     for _ in 0..1000000000 {
         let mut game = Game::start(seed);
@@ -150,7 +150,7 @@ fn part_1() {
 }
 
 fn part_2() {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     let mut all_locations = HashSet::new();
     for _ in 0..1000000 {

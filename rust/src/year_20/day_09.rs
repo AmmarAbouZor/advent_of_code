@@ -49,7 +49,7 @@ fn find_contiguous_set(input: &str, target: isize) -> isize {
         while sum < target {
             sum += nums[next_idx];
             if sum == target {
-                if let MinMax(&min, &max) = &nums[idx..=next_idx].iter().minmax() {
+                if let &MinMax(min, max) = &nums[idx..=next_idx].iter().minmax() {
                     return min + max;
                 }
             }

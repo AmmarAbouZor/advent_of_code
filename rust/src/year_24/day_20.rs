@@ -1,4 +1,4 @@
-use std::collections::{hash_map::Entry, HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque, hash_map::Entry};
 
 use itertools::Itertools;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
@@ -162,7 +162,7 @@ fn part_1(input: &'static str) {
     let counts = cheat_counts(input);
     let sum: usize = counts
         .iter()
-        .filter(|(&diff, _)| diff >= 100)
+        .filter(|&(diff, _)| *diff >= 100)
         .map(|(_, c)| c)
         .sum();
 
