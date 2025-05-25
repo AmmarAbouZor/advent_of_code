@@ -138,4 +138,3 @@ mod test {
         assert_eq!(calc_score_last(INPUT), 1924);
     }
 }
-

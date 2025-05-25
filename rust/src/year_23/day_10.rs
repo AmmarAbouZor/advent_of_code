@@ -483,4 +483,3 @@ LJ.LJ";
         assert_eq!(calc_steps(INPUT_2), 8);
     }
 }
-

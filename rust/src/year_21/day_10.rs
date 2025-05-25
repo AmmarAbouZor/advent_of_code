@@ -142,4 +142,3 @@ mod test {
         assert_eq!(calc_overall_comp_score(INPUT), 288957);
     }
 }
-

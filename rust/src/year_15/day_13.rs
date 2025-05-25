@@ -33,11 +33,7 @@ fn fetch_input() -> (HashMap<Couple, i32>, HashSet<String>) {
             let b_person = parts.last().unwrap().trim_end_matches('.');
             let score = {
                 let num: i32 = parts[3].parse().unwrap();
-                if parts[2] == "gain" {
-                    num
-                } else {
-                    -num
-                }
+                if parts[2] == "gain" { num } else { -num }
             };
             map.insert(Couple::new(a_person, b_person), score);
             people.insert(a_person.into());

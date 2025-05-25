@@ -189,4 +189,3 @@ mod test {
         assert_eq!(get_overlap_count_diag(INPUT), 12)
     }
 }
-

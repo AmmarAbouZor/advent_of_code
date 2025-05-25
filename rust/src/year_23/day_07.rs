@@ -318,4 +318,3 @@ QQQJA 483";
         assert_eq!(calc_jocker_winnings(INPUT), 5905);
     }
 }
-

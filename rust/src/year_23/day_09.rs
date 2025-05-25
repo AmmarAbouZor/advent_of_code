@@ -82,4 +82,3 @@ mod test {
         assert_eq!(calc_sum(INPUT, calc_extra_revers), 2);
     }
 }
-

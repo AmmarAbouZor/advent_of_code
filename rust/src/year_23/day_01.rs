@@ -107,4 +107,3 @@ zoneight234
         assert_eq!(calc_sum_words(INPUT_2), 281);
     }
 }
-

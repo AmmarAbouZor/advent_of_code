@@ -154,4 +154,3 @@ U 2 (#7a21e3)";
         assert_eq!(calc_from_hex(INPUT), 952408144115);
     }
 }
-

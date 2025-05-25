@@ -106,4 +106,3 @@ mod test {
         assert_eq!(lossy, 4);
     }
 }
-

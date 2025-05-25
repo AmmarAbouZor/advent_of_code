@@ -142,4 +142,3 @@ acc +6";
         assert_eq!(get_value_after_correction(INPUT), 8);
     }
 }
-

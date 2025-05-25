@@ -58,4 +58,3 @@ mod test {
         assert_eq!(get_win_product(&input_2), 71503);
     }
 }
-

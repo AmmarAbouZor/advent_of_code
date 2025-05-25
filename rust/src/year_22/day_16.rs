@@ -53,8 +53,12 @@ fn calc_distances_floyd(valves: &[Valve]) -> BTreeMap<Pair, usize> {
     for mid in names.iter() {
         for src in names.iter() {
             for target in names.iter() {
-                let Some(&src_mid) = distances.get(&Pair(src, mid)) else {continue};
-                let Some(&mid_target) = distances.get(&Pair(mid, target)) else {continue};
+                let Some(&src_mid) = distances.get(&Pair(src, mid)) else {
+                    continue;
+                };
+                let Some(&mid_target) = distances.get(&Pair(mid, target)) else {
+                    continue;
+                };
 
                 distances
                     .entry(Pair(src, target))

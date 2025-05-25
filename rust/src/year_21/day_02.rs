@@ -94,4 +94,3 @@ forward 2";
         assert_eq!(depth_hight_aim(INPUT), 900);
     }
 }
-

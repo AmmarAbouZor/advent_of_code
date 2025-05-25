@@ -103,11 +103,7 @@ impl Command {
                     Argument::Register(name) => *reg_map.get(name).unwrap(),
                     Argument::Value(value) => value.to_owned(),
                 };
-                if val != 0 {
-                    off_val
-                } else {
-                    1
-                }
+                if val != 0 { off_val } else { 1 }
             }
             Command::Output(reg) => {
                 let val = reg_map.get(reg).unwrap().to_owned();

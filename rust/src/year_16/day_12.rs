@@ -94,11 +94,7 @@ impl Command {
                     Argument::Value(value) => value.to_owned(),
                 };
 
-                if val != 0 {
-                    *offset
-                } else {
-                    1
-                }
+                if val != 0 { *offset } else { 1 }
             }
         }
     }

@@ -213,4 +213,3 @@ mod test {
         assert_eq!(calc_min_heat(INPUT_2, 4, 10), 71);
     }
 }
-

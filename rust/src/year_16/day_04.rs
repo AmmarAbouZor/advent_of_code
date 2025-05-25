@@ -109,22 +109,30 @@ mod tests {
 
     #[test]
     fn test_is_room() {
-        assert!("aaaaa-bbb-z-y-x-123[abxyz]"
-            .parse::<Room>()
-            .unwrap()
-            .is_valid());
-        assert!("a-b-c-d-e-f-g-h-987[abcde]"
-            .parse::<Room>()
-            .unwrap()
-            .is_valid());
-        assert!("not-a-real-room-404[oarel]"
-            .parse::<Room>()
-            .unwrap()
-            .is_valid());
-        assert!(!"totally-real-room-200[decoy]"
-            .parse::<Room>()
-            .unwrap()
-            .is_valid());
+        assert!(
+            "aaaaa-bbb-z-y-x-123[abxyz]"
+                .parse::<Room>()
+                .unwrap()
+                .is_valid()
+        );
+        assert!(
+            "a-b-c-d-e-f-g-h-987[abcde]"
+                .parse::<Room>()
+                .unwrap()
+                .is_valid()
+        );
+        assert!(
+            "not-a-real-room-404[oarel]"
+                .parse::<Room>()
+                .unwrap()
+                .is_valid()
+        );
+        assert!(
+            !"totally-real-room-200[decoy]"
+                .parse::<Room>()
+                .unwrap()
+                .is_valid()
+        );
     }
 
     #[test]

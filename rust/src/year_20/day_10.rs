@@ -122,4 +122,3 @@ mod test {
         assert_eq!(get_arrangement_count(INPUT_2), 19208);
     }
 }
-

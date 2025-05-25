@@ -159,4 +159,3 @@ mod test {
         assert_eq!(calc_life_support(INPUT), 230);
     }
 }
-

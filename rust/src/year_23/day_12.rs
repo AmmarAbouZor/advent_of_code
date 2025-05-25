@@ -231,4 +231,3 @@ mod test {
         assert_eq!(calc_expand_sum(INPUT), 525152);
     }
 }
-

@@ -138,4 +138,3 @@ v.v..>>v.v
         assert_eq!(grid.get_rounds_to_stop_moving(), 58);
     }
 }
-

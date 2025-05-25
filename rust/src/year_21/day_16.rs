@@ -143,29 +143,17 @@ fn decode_packet_result(binary: &[u8], idx: &mut usize) -> usize {
         PacketType::GreaterThan => {
             let resutls = parse_operator_for_result(binary, idx);
             assert_eq!(resutls.len(), 2);
-            if resutls[0] > resutls[1] {
-                1
-            } else {
-                0
-            }
+            if resutls[0] > resutls[1] { 1 } else { 0 }
         }
         PacketType::LessThan => {
             let resutls = parse_operator_for_result(binary, idx);
             assert_eq!(resutls.len(), 2);
-            if resutls[0] < resutls[1] {
-                1
-            } else {
-                0
-            }
+            if resutls[0] < resutls[1] { 1 } else { 0 }
         }
         PacketType::Equal => {
             let resutls = parse_operator_for_result(binary, idx);
             assert_eq!(resutls.len(), 2);
-            if resutls[0] == resutls[1] {
-                1
-            } else {
-                0
-            }
+            if resutls[0] == resutls[1] { 1 } else { 0 }
         }
     }
 }

@@ -134,4 +134,3 @@ dark violet bags contain no other bags.";
         assert_eq!(calc_nested_count(INPUT_2), 126);
     }
 }
-

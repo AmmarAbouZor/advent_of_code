@@ -191,4 +191,3 @@ fold along x=5
         assert_eq!(get_count_after_one_fold(INPUT), 17);
     }
 }
-

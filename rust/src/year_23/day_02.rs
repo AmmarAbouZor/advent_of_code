@@ -132,4 +132,3 @@ Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green";
         assert_eq!(calc_min_power(INPUT), 2286);
     }
 }
-

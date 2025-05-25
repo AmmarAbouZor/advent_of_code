@@ -80,4 +80,3 @@ mod test {
         assert_eq!(calc_slops_prod(INPUT), 336);
     }
 }
-

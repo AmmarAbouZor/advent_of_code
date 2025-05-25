@@ -161,4 +161,3 @@ mod test {
         assert_eq!(grid.calc_basians_sum(), 1134);
     }
 }
-

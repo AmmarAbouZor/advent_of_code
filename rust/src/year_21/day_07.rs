@@ -96,4 +96,3 @@ mod test {
         assert_eq!(calc_least_fuel_2(INPUT), 168)
     }
 }
-

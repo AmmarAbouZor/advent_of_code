@@ -82,4 +82,3 @@ mod test {
         assert_eq!(calc_focal_sum(INPUT), 145);
     }
 }
-

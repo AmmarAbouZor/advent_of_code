@@ -173,4 +173,3 @@ XXX = (XXX, XXX)";
         assert_eq!(calc_step_simu(INPUT_3), 6);
     }
 }
-

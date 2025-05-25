@@ -147,4 +147,3 @@ mod test {
         assert_eq!(correct, 123);
     }
 }
-

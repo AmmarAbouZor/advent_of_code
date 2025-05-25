@@ -136,4 +136,3 @@ mod test {
         assert_eq!(res, 37327623);
     }
 }
-

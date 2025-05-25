@@ -202,4 +202,3 @@ mod test {
         assert_eq!(find_possible_hits_count(INPUT), 112);
     }
 }
-

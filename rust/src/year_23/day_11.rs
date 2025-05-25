@@ -110,4 +110,3 @@ mod test {
         assert_eq!(calc_paths_sum(INPUT, 99), 8410);
     }
 }
-

@@ -254,4 +254,3 @@ hdj{m>838:A,pv}
         assert_eq!(get_combinations(INPUT), 167409079868000);
     }
 }
-

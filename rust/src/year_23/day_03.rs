@@ -181,4 +181,3 @@ mod test {
         assert_eq!(get_gear_sum(INPUT), 467835);
     }
 }
-

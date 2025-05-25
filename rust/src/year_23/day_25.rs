@@ -19,11 +19,7 @@ fn parse_edges(input: &'static str) -> HashMap<&'static str, HashSet<&'static st
 }
 
 fn get_uniqe_key(n1: &'static str, n2: &'static str) -> [&'static str; 2] {
-    if n1 > n2 {
-        [n1, n2]
-    } else {
-        [n2, n1]
-    }
+    if n1 > n2 { [n1, n2] } else { [n2, n1] }
 }
 
 fn solve(input: &'static str) -> usize {

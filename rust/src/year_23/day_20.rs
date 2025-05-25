@@ -79,11 +79,7 @@ impl Module {
             ModuleType::FlipFlop { state } => match pulse {
                 Pulse::Low => {
                     *state = !*state;
-                    if *state {
-                        Pulse::High
-                    } else {
-                        Pulse::Low
-                    }
+                    if *state { Pulse::High } else { Pulse::Low }
                 }
                 Pulse::High => return Vec::new(),
             },
